@@ -99,13 +99,11 @@ def InitializeDataset(sensorTypes, FDN):
     for st in sensorTypes:
         datasetColumns.append(st[0])
     
-    tempdf = (pd.read_csv(FDN + ".csv"))
-    
-    print(tempdf)
+    tempdf = (pd.read_csv(FDN, index_col = False))
     
     df_ = pd.DataFrame(columns = datasetColumns)
     
-    df_.time = tempdf.time
+    df_.time = tempdf.Time
     df_.x = tempdf.x
     df_.y = tempdf.y
     df_.activity = tempdf.Action
@@ -138,8 +136,10 @@ def VectorizeSensorReadings(fs, time):
             
 #DONE
 def RegionOfSimilarity(exactLocation, epsilon):
+
     new_x =  uniform(max(exactLocation[0] - epsilon, 0), exactLocation[0] + epsilon)
     new_y =  uniform(max(exactLocation[1] - epsilon, 0), exactLocation[1] + epsilon)
+    
     
     room, name = FindAgentsRoom(exactLocation[0], exactLocation[1])
     
@@ -170,6 +170,12 @@ def FindAgentsRoom(x, y):
 def SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, t, i, agent1Loc, agent2Loc = None):
     myfs = []
     for sensor in sensors_list:
+        if (simulateEstimotes == False and sensor.sensor_type == "beacon_sensor"):
+            continue
+            
+        if (simulateMotionSensors == False and sensor.sensor_type == "motion_sensor"):
+            continue
+    
         if (simulateMotionSensors):
             if (plotflag and sensor.sensor_type == "motion_sensor"):
                 pp = ax.plot(float(sensor.x) / 100, float(sensor.y) / 100 , marker='.', color='k', lw=5)
@@ -269,6 +275,13 @@ def RunSimulation(FDN, simulateMotionSensors, simulateEstimotes):
         xtrace = float(df_.x[i])
         ytrace = float(df_.y[i])
         
+        if (xtrace < 0):
+            xtrace = abs(xtrace)
+        
+        if (ytrace < 0):
+            ytrace = abs(ytrace)
+            
+        
         agent1Loc = [xtrace, ytrace]
         
         agent1Loc_previous = [0, 0]
@@ -291,22 +304,23 @@ def CreateUltimateDataset(UDN, epoch):
     
     df_.to_csv(UDN + ".csv", sep=',', index=False)
 
-def MakeSensorsList(sensors):
+def MakeSensorsList(sensors, radius):
+    radius = 1
     motionCounter = 0
     beaconCounter = 0
     for sensor_list in sensors:
         for sensor in sensor_list:
             if sensor[2] == 'motion sensors':
-                this_sensor = sc.MotionSensorBinary(sensor[0][0], sensor[0][1], 1.2, sensor[1], motionCounter)
+                this_sensor = sc.MotionSensorBinary(sensor[0][0], sensor[0][1], radius, sensor[1], motionCounter)
                 motionCounter = motionCounter + 1
                 sensors_list.append(this_sensor)
 
             elif sensor[2] == 'beacon sensors':
-                this_sensor = sc.BeaconSensor(sensor[0][0], sensor[0][1], 1.2, sensor[1], beaconCounter)
+                this_sensor = sc.BeaconSensor(sensor[0][0], sensor[0][1], radius, sensor[1], beaconCounter)
                 beaconCounter = beaconCounter + 1
                 sensors_list.append(this_sensor)
 
-def RunSimulator(space, Rooms, sensorsConfiguration, simulateMotionSensorsflag, simulateEstimotesflag, plottingflag, iteration, Data_path):
+def RunSimulator(space, Rooms, agentTrace, sensorsConfiguration, simulateMotionSensorsflag, simulateEstimotesflag, plottingflag, iteration, Data_path):
     global fig
     global ax
     global img
@@ -314,17 +328,22 @@ def RunSimulator(space, Rooms, sensorsConfiguration, simulateMotionSensorsflag, 
     global rooms
     rooms = Rooms
     Epoch = 1
-    FDN = Data_path + 'Data//Pandas Datasets//ARTEST'
-    UDN = Data_path + "Data//Results//Configurations//ConfigurationNO" + str(iteration)
+    # FDN = Data_path + 'Data//Pandas Datasets//ARTEST'
+    FDN = agentTrace
+    UDN = Data_path + "/Results/DatasetForAgent" + str(iteration)
+    
+    sc = sensorsConfiguration[0]
+    radius = sensorsConfiguration[1]
+    
     simulateMotionSensors = simulateMotionSensorsflag
     simulateEstimotes = simulateEstimotesflag
     SwitchPlotFlag(plottingflag)
     
-    Initialization(sensorsConfiguration)
-    InitializeDataset(sensorsConfiguration[0], FDN)
+    Initialization(sc)
+    InitializeDataset(sc[0], FDN)
     for epoch in range(Epoch):
-        Initialization(sensorsConfiguration)
-        sensors_list = MakeSensorsList(sensorsConfiguration[1])
+        Initialization(sc)
+        sensors_list = MakeSensorsList(sc[1], radius)
         if (plotflag):
             # %matplotlib notebook
             fig, ax = plt.subplots(figsize = (6.6, 10.5))
