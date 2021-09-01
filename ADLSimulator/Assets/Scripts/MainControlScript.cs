@@ -1,4 +1,4 @@
-﻿using GeometryGym.Ifc;
+using GeometryGym.Ifc;
 using IfcEngineWrapper;
 using System;
 using System.Collections.Generic;
@@ -39,6 +39,9 @@ public class MainControlScript : MonoBehaviour
     public InputField ExportFileName;
     public GameObject ObjectSelectionContent;
     public Button Quit;
+    public Button Export;
+    public Button AddProperty;
+    public Button doneParameter;
     public Canvas MainCanvas;
     public Canvas AddParamCanvas;
     public InputField ParamNameText;
@@ -112,6 +115,19 @@ public class MainControlScript : MonoBehaviour
         Button QuitButton = Quit.GetComponent<Button>();
         QuitButton.onClick.AddListener(QuitButtonStart);
 
+        Button exportButton = Export.GetComponent<Button>();
+        exportButton.onClick.AddListener(ExportModelClicked);
+
+        Button AddPropertyButton = AddProperty.GetComponent<Button>();
+        AddPropertyButton.onClick.AddListener(AddPropertyButtonClicked);
+
+        Button doneParameterButton = doneParameter.GetComponent<Button>();
+        doneParameterButton.onClick.AddListener(DoneParamClicked);
+
+
+        Button DeleteObjectsButton = DeleteObjects.GetComponent<Button>();
+        DeleteObjectsButton.onClick.AddListener(DeleteObjectClicked);
+
         // Get information if the simulator must run
         if (SimulationConfiguration.RunSimulation)
         {
@@ -126,7 +142,8 @@ public class MainControlScript : MonoBehaviour
             distinctAgentTypeNames = agentTypeNames.Distinct().ToList();
             agentArray = new List<Agent>();
 
-            timeScale = simulationLengthInMinutes / (2 * 60);
+            // SHADAN: the simulator simulates 24 hours in the given simulationLengthInMinutes:
+            timeScale = simulationLengthInMinutes / (5 * 60);
             endSimulationTime = Time.time + simulationLengthInMinutes * 60;
             GetAgentNameIDsIntoDictionary();
         }
@@ -311,8 +328,7 @@ public class MainControlScript : MonoBehaviour
             // If the simulation time is over, end the application
             if (Time.time > endSimulationTime + agentArray[0].getIdleTime() || CountCompletedAgents() == agentArray.Count())
             {
-                // Use this only while in the Editor
-                UnityEditor.EditorApplication.isPlaying = false;
+                
 
                 string dir = "Assets\\Logs\\" + DateTime.Now.ToString("yyyy-MM-dd_hh-mm-ss")+"\\";
                 Directory.CreateDirectory(dir);
@@ -320,6 +336,9 @@ public class MainControlScript : MonoBehaviour
                 {
                     agent.WriteLog(dir);
                 }
+
+                // Use this only while in the Editor
+                UnityEditor.EditorApplication.isPlaying = false;
 
                 // Use this if you are actually running the application and not in the Unity Editor
                 //Application.Quit();
@@ -371,7 +390,7 @@ public class MainControlScript : MonoBehaviour
                 else
                 {
                     if (selectedObject != null)
-                    {
+                    {   
                         selectedObject.Unhighlightobjects();
                         selectedObject = null;
                     }
@@ -628,13 +647,15 @@ public class MainControlScript : MonoBehaviour
     public void DeleteObjectClicked()
     {
         try
-        {
+        {    
             if (objectLocked && selectedObject != null)
             {
                 selectedObject.DeactivateObjects();
+                //selectedObject.Properties.Remove(selectedObject.Properties.Last());
                 selectedObject = null;
                 objectLocked = false;
                 ObjectInfo.text = "Object Info";
+	        
             }
         }
         catch (Exception ex)
@@ -678,6 +699,8 @@ public class MainControlScript : MonoBehaviour
     {
         string newFileName = ifcModelDirectory + ExportFileName.text;
         IfcDataBase.WriteFile(newFileName + ".ifc");
+
+
     }
 
     public void ToggleChangedObjects()
@@ -725,6 +748,7 @@ public class MainControlScript : MonoBehaviour
         // Should trigger the new object to add the new property in the IFC file aswell (under property set)
         string parameterName = ParamNameText.text;
         string parameterValue = ParamValueText.text;
+
         selectedObject.AddElementProperty(selectedObject.IfcElem, IfcDataBase, parameterName, parameterValue);
         AddParamCanvas.gameObject.SetActive(false);
     }

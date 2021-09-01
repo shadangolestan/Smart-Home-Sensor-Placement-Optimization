@@ -293,14 +293,18 @@ public class IfcCollectiveObject
 
     public void DeactivateObjects()
     {
+        
         if (GameObjectBB != null)
             GameObjectBB.SetActive(false);
         if (IfcGameObject != null)
             IfcGameObject.SetActive(false);
+        
         if (GameObjectBB != null)
             GameObject.Destroy(GameObjectBB);
+        
         if (IfcGameObject != null)
             GameObject.Destroy(IfcGameObject);
+        
     }
 
     public void SetMeshRenderMaterial(GameObject go, Material mat)
@@ -352,6 +356,7 @@ public class IfcCollectiveObject
     {
         Properties.Add(new Property(propertyName, propertyValue));
 
+        
         // TODO: add it the the IFC database too:
 
         IReadOnlyCollection<IfcRelDefinesByProperties> reldefs = elem.IsDefinedBy;
@@ -374,6 +379,7 @@ public class IfcCollectiveObject
             // I am just adding it here to the first propertyset it finds. You may want to find a specific one.
             // But since the GetElementProperties gets all together maybe who cares right?
             ps.AddProperty(new IfcPropertySingleValue(db, propertyName, propertyValue));
+            ///Properties.Remove(elem);
             break;
         }
     }

@@ -61,26 +61,26 @@ public class TaskPlanner {
         }
 
         // Checks for postcondition
-        //if (completedActions.Count != 0)
-        //{
-        //    action = dictionaryActions[completedActions.Last()];
+        if (completedActions.Count != 0)
+        {
+            action = dictionaryActions[completedActions.Last()];
 
-        //    actionName = action.GetPostAction();
-        //    if (actionName != null)
-        //    {
-        //        action = dictionaryActions[actionName];
-        //        action.completed++;
-        //        completedActions.Add(actionName);
+            actionName = action.GetPostAction();
+            if (actionName != null)
+            {
+                action = dictionaryActions[actionName];
+                action.completed++;
+                completedActions.Add(actionName);
 
-        //        return actionName;
-        //    }
-        //}
+                return actionName;
+            }
+        }
 
         // Probability
         // Debug.Log("Checking Guaranteed actions");
         // Debug.Log(guarenteedActions.Count);
-        //Debug.Log(guarenteedActions[0].name);
-        //Debug.Log(guarenteedActions[1].name);
+        // Debug.Log(guarenteedActions[0].name);
+        // Debug.Log(guarenteedActions[1].name);
         actionName = findAction(guarenteedActions, completedActions);
 
         if (actionName == null)
@@ -94,20 +94,20 @@ public class TaskPlanner {
         {
             action = dictionaryActions[actionName];
 
-            //string dependencyName = action.GetDependency();
-            //if (dependencyName != null)
-            //{
-            //    Debug.Log("Dependency Found: " + actionName);
-            //    action = dictionaryActions[dependencyName];
-            //    action.completed++;
-            //    completedActions.Add(dependencyName);
-            //    actionName = dependencyName;
-            //}
-            // Debug.Log("There is no dependency");
+            string dependencyName = action.GetDependency();
+            if (dependencyName != null)
+            {
+                Debug.Log("Dependency Found: " + actionName);
+                action = dictionaryActions[dependencyName];
+                //!action.completed++;
+                //!completedActions.Add(dependencyName);
+                actionName = dependencyName;
+            }
+            Debug.Log("There is no dependency");
 
             action.completed++;
             Debug.Log(actionName);
-            // completedActions.Add(actionName);
+            completedActions.Add(actionName);
 
             return actionName;
         }
@@ -129,23 +129,23 @@ public class TaskPlanner {
 
             int randVar = random.Next(101);
 
-            //if (action.probability + randVar < 100)
-            //{
-            //    Debug.Log("Failed chance");
-            //    continue;
-            //}
+            if (action.probability + randVar < 100)
+            {
+                Debug.Log("Failed chance");
+                continue;
+            }
 
-            if (action.occurrence > 0 && action.occurrence == action.completed)
+            if (action.occurrence > 0 && action.occurrence <= action.completed)
             {
                 Debug.Log("Failed max occurrences");
                 continue;
             }
 
-            //if (!action.availableAtTime(Time.time - startTime, timeScale))
-            //{
-            //    Debug.Log("Failed time");
-            //    continue;
-            //}
+            if (!action.availableAtTime(Time.time - startTime, timeScale))
+            {
+                Debug.Log("Failed time");
+                continue;
+            }
 
             if (IsRepetitiveAction(action.name, completedActions, 2))
             {
@@ -177,9 +177,10 @@ public class TaskPlanner {
     // TODO: Prepopulate everything or cache it somehow to prevent unnecessary calculation
     public Vector3 GetActionDestination(string action)
     {
-        if (action == "Finish the session")
+        if (action.Equals("finish session"))
         {
             Debug.Log("shadan");
+            return new Vector3(0,0,0);
         }
 
         FindActionableIFCGameObjects(action);

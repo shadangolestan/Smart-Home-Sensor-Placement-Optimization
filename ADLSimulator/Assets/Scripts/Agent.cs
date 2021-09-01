@@ -63,7 +63,7 @@ public class Agent : MonoBehaviour
 
         //TODO update a string containing text to dump to file
         Vector3 position = gameObject.transform.position;
-        if (Time.time - previousDataPointTime >= 2.7 * timeScale && Time.time - previousDataPointTime <= 3.3 * timeScale)
+        if (Time.time - previousDataPointTime >= 2 * timeScale && Time.time - previousDataPointTime <= 3 * timeScale)
         //if (Time.time - previousDataPointTime == 3 * timeScale)
         {
             /*
@@ -73,7 +73,8 @@ public class Agent : MonoBehaviour
              * TIME, AGENTID, X, Z, Y, ACTIVITY
              */
 
-            Debug.LogWarning("Data Point Stored");
+            // Debug.LogWarning("Data Point Stored");
+
             previousDataPointTime = Time.time;
 
             log.Add(GetTimeString() + ","
@@ -81,7 +82,7 @@ public class Agent : MonoBehaviour
                 + -1 * (position.x - 2.2f) + ","
                 + ((position.z + 3.2f)) + ","
                 + position.y + ","
-                + currentAction + ",");
+                + currentAction + '_' + actionAlias + ",");
 
             //log.Add(GetTimeString() + ","
             //    + "1" + "," /* Fake Agent ID */
@@ -138,6 +139,7 @@ public class Agent : MonoBehaviour
         if (currentAction == null)
         {
             Debug.Log("END OF SESSION");
+            currentAction = "finish session";
             return;
         }
 
@@ -152,8 +154,10 @@ public class Agent : MonoBehaviour
 
         System.Random rand = new System.Random();
         float duration = action.duration;
-        float actionVariance = duration * ((rand.Next(30) - 10) / 100);
-        actionEndTime = Time.time + (duration - actionVariance) * timeScale * 60;
+        float actionVariance = (duration / 3) + rand.Next((int)(duration / 2), (int)duration);
+        Debug.Log("action duration is : " + duration.ToString());
+        Debug.Log("action variance is : " + actionVariance.ToString());
+        actionEndTime = Time.time + ((actionVariance * timeScale) * 60);
 
         actionAlias = action.GetAlias();
 
