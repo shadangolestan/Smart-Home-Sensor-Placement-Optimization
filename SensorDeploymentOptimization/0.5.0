@@ -1,0 +1,10 @@
+Collecting pyrfr
+  Using cached pyrfr-0.8.2.tar.gz (296 kB)
+Building wheels for collected packages: pyrfr
+  Building wheel for pyrfr (setup.py): started
+  Building wheel for pyrfr (setup.py): finished with status 'error'
+  Running setup.py clean for pyrfr
+Failed to build pyrfr
+Installing collected packages: pyrfr
+    Running setup.py install for pyrfr: started
+    Running setup.py install for pyrfr: finished with status 'error'
