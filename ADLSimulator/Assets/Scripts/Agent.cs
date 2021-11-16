@@ -77,12 +77,19 @@ public class Agent : MonoBehaviour
 
             previousDataPointTime = Time.time;
 
+            //log.Add(GetTimeString() + ","
+            //    + "1" + "," /* Fake Agent ID */
+            //    + -1 * (position.x - 2.2f) + ","
+            //    + ((position.z + 3.2f)) + ","
+            //    + position.y + ","
+            //    + currentAction + '_' + actionAlias + ",");
+
             log.Add(GetTimeString() + ","
-                + "1" + "," /* Fake Agent ID */
-                + -1 * (position.x - 2.2f) + ","
-                + ((position.z + 3.2f)) + ","
-                + position.y + ","
-                + currentAction + '_' + actionAlias + ",");
+               + "1" + "," /* Fake Agent ID */
+               + -1 * (position.x) + ","
+               + (position.z) + ","
+               + position.y + ","
+               + currentAction + '_' + actionAlias + ",");
 
             //log.Add(GetTimeString() + ","
             //    + "1" + "," /* Fake Agent ID */

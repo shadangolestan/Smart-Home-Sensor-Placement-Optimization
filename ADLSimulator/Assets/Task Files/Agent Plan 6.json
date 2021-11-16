@@ -1,15 +1,5 @@
 {
     "Actions": {
-        "Laundry": {
-            "name": "Laundry",
-            "duration": 5,
-            "probability": 100,
-            "occurrence": 1,
-            "requires": [],
-            "post": [],
-            "times": [],
-            "aliases": []
-        },
 
         "Iron": {
             "name": "Iron",
@@ -232,15 +222,37 @@
             "aliases": [ "Watching_TV" ]
         },
 
+        "Grab_Groom": {
+            "name": "Grab_Groom",
+            "duration": 2,
+            "probability": 100,
+            "occurrence": 1,
+            "requires": [],
+            "post": [],
+            "times": [],
+            "aliases": []
+        },
+
         "Clean": {
             "name": "Clean",
-            "duration": 5,
+            "duration": 7,
             "probability": 100,
             "occurrence": 1,
             "requires": [],
             "post": [],
             "times": [],
             "aliases": [ "General Cleaning Up" ]
-        }
+        },
+        
+        "Leave_Groom": {
+            "name": "Leave_Groom",
+            "duration": 2,
+            "probability": 100,
+            "occurrence": 1,
+            "requires": [],
+            "post": [],
+            "times": [],
+            "aliases": []
+        },
     }
 }

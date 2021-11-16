@@ -630,8 +630,12 @@ class IfcMeshUtils
 
     public static GameObject CreateBoundingBoxCube(BoundingBox boundingBox)
     {
-        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        cube.transform.position = boundingBox.Center;
+
+            GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+
+        try
+        {
+            cube.transform.position = boundingBox.Center;
         cube.transform.localScale = boundingBox.Dimentions;
 
         //float angleX = Vector3.Angle(boundingBox.RightDirection, Vector3.right);
@@ -645,7 +649,10 @@ class IfcMeshUtils
         float alpha = Mathf.Atan2(-Z.y, Z.z);
         float beta = (Mathf.Asin(Z.x));
         float gamma = -Mathf.Atan2(-Y.x, X.x);
-        cube.transform.Rotate(new Vector3(alpha * 180 / Mathf.PI, beta * 180 / Mathf.PI, gamma * 180 / Mathf.PI));
+
+            cube.transform.Rotate(new Vector3(alpha * 180 / Mathf.PI, beta * 180 / Mathf.PI, gamma * 180 / Mathf.PI));
+        }
+        catch { }
 
         return cube;
     }

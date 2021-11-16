@@ -179,7 +179,6 @@ public class TaskPlanner {
     {
         if (action.Equals("finish session"))
         {
-            Debug.Log("shadan");
             return new Vector3(0,0,0);
         }
 
@@ -189,6 +188,8 @@ public class TaskPlanner {
         Vector3 destination = new Vector3(0, 0, 0);
         try
         {
+            Debug.Log(action);
+            Debug.Log(actionableDestinations.Count);
             destination = actionableDestinations[random.Next(actionableDestinations.Count)];
         }
         catch {

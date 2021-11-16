@@ -123,6 +123,9 @@ def InitializeDataset(sensorTypes, FDN):
 
 #DONE
 def VectorizeSensorReadings(fs, time):
+    if len(fs) == 0:
+        print('here we go')
+        
     sensor_bins = [0] * sensorsTypes[0][1]
     
     try:
@@ -190,11 +193,9 @@ def FindAgentsRoom(x, y):
 def SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, t, i, agent1Loc, agent2Loc = None):
     myfs = []
     for sensor in sensors_list:
-        if (simulateEstimotes == False and sensor.sensor_type == "beacon_sensor"):
-            continue
-            
-        if (simulateMotionSensors == False and sensor.sensor_type == "motion_sensor"):
-            continue
+        
+        if (simulateEstimotes == False and sensor.sensor_type == "beacon_sensor"): continue
+        if (simulateMotionSensors == False and sensor.sensor_type == "motion_sensor"): continue
     
         if (simulateMotionSensors):
             if (plotflag and sensor.sensor_type == "motion_sensor"):
@@ -206,7 +207,6 @@ def SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, t, i, agent
 
         circ = Circle((float(float(sensor.x) / 100), float(float(sensor.y) / 100)), float(float(sensor.sensing_area) / 100))
 
-        
         if (circ.contains_point([agent1Loc[0], agent1Loc[1]]) and (RecContains(agent1Loc[0], agent1Loc[1], sensor.room) or sensor.sensor_type == "beacon_sensor")):
             no_event_flag = 0
             event = ec.Event()
@@ -216,11 +216,6 @@ def SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, t, i, agent
             event.source = "xmlFile" #where is coming from
             event.timestamp = t
             event.sensorType = sensor.sensor_type #type of sensor
-
-            # if (plotflag):
-            #     p3 = ax.plot(float(float(sensor.x) / 100), float(float(sensor.y) / 100) , marker='>', color='r', lw=10)
-
-            # current_location = run_localization(event)
             
             if (float(FiringProbability(sensor, agent1Loc)) > random.uniform(0, 1)):
                 myfs.append(sensor)
@@ -228,34 +223,10 @@ def SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, t, i, agent
             if (0.1 > random.uniform(0, 1)):
                 myfs.append(sensor)
 
-            
-    # if (simulateMotionSensors):
-    #     real_fired = [ii for ii, e in enumerate(df_.gt_motion_readings[i]) if e == 1]
-    #     if (plotflag):
-    #         for rf in real_fired:
-    #             sid = str(motion_sensors[rf])
-    #             for s in sensors_list:
-    #                 if (s.sensor_type == "MotionSensorBinary"):
-    #                     if (s.sensor_id == sid):
-    #                         p4 = ax.plot(float(float(s.x) / 100), float(float(s.y) / 100) , marker='<', color='b', lw=5)
-
-
-    # if (simulateEstimotes):
-    #     real_fired = [ii for ii, e in enumerate(df_.gt_estimote_readings[i]) if e == 1]
-    #     if (plotflag):
-    #         for rf in real_fired:
-    #             sid = estimote_names[rf]
-    #             for s in sensors_list:
-    #                 if (s.sensor_type == "BeaconSensor"):
-    #                     if (s.sensor_id == sid):
-    #                         # print(sid, df_.sthx[i], df_.sthy[i])
-    #                         # sensed_areas[s.sensor_id].append((df_.sthx[i], df_.sthy[i]))
-    #                         p4 = ax.plot(float(float(s.x) / 100), float(float(s.y) / 100) , marker='<', color='b', lw=5)
-
     no_event_flag = 0
 
     VectorizeSensorReadings(myfs, i) 
-
+    
     if (plotflag):
         xlim=(0, 6)
         ylim=(0, 10)
@@ -267,7 +238,10 @@ def SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, t, i, agent
         fig.canvas.draw()
         ax.cla()
         # ax.imshow(img, extent=[0, 6.6, 0, 10])
+        
+        
 
+    
 
 def FiringProbability(sensor, agentLocation):
     import math
@@ -289,31 +263,31 @@ def FiringProbability(sensor, agentLocation):
     
 def RunSimulation(FDN, simulateMotionSensors, simulateEstimotes):     
     global df_
-    for i in range(1, len(df_)): 
+    for i in range(1, len(df_)):       
         no_event_flag = 1
+        print('agent loc calculation')
         xtrace = float(df_.x[i])
         ytrace = float(df_.y[i])
         
-        if (xtrace < 0):
-            xtrace = abs(xtrace)
-        
-        if (ytrace < 0):
-            ytrace = abs(ytrace)
-            
-        
+        if (xtrace < 0): xtrace = abs(xtrace)
+        if (ytrace < 0): ytrace = abs(ytrace)
+         
         agent1Loc = [xtrace, ytrace]
+        
+        print(agent1Loc)
         
         agent1Loc_previous = [0, 0]
         epsilon = 0.7
         
         if (not agent1Loc_previous == agent1Loc):
             agent1Loc_rnd = RegionOfSimilarity(agent1Loc, epsilon)
+            # agent1Loc_rnd = agent1Loc
             agent1Loc_previous = agent1Loc
             
         timetoadd = df_.time[i]
-    
+        
         SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, timetoadd, i, agent1Loc_rnd, None)
-
+    
 def CreateUltimateDataset(UDN, epoch):
     simulated_sensor_readings.append([0]*len(simulated_sensor_readings[0]))
     df_['motion sensors'] = [[float(j)/epoch for j in i] for i in simulated_sensor_readings[0: len(df_.x)]]
@@ -338,11 +312,14 @@ def MakeSensorsList(sensors, radius):
                 this_sensor = sc.MotionSensorBinary(sensor[0][0], sensor[0][1], radius, sensor[1], motionCounter)
                 motionCounter = motionCounter + 1
                 sensors_list.append(this_sensor)
+                
 
             elif sensor[2] == 'beacon sensors':
                 this_sensor = sc.BeaconSensor(sensor[0][0], sensor[0][1], radius, sensor[1], beaconCounter)
                 beaconCounter = beaconCounter + 1
                 sensors_list.append(this_sensor)
+                
+    return sensors_list
 
 def RunSimulator(space, Rooms, agentTrace, sensorsConfiguration, simulateMotionSensorsflag, simulateEstimotesflag, plottingflag, Data_path):
     global fig
@@ -373,8 +350,12 @@ def RunSimulator(space, Rooms, agentTrace, sensorsConfiguration, simulateMotionS
             fig, ax = plt.subplots(figsize = (6.6, 10.5))
             # img = plt.imread("Data//sc.png")        
 
+        print('RunSimulation')
         RunSimulation(FDN, simulateMotionSensors, simulateEstimotes)
-
+        print('RunSimulation done')
+        
+    print('creating ultimate dataset')
     CreateUltimateDataset(UDN, Epoch)
+    
     
     return df_

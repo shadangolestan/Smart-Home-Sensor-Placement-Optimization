@@ -420,6 +420,7 @@ public class MainControlScript : MonoBehaviour
 
     private void PlaceNewObjectAndCheck()
     {
+        Debug.Log(modelScale);
         IfcCollectiveObject newObject = new IfcCollectiveObject(gameObjBeingAdded, IfcDataBase, modelScale);
         AddGameObjectToCategory(newObject);
         CategorizeGameObjects();
@@ -518,6 +519,9 @@ public class MainControlScript : MonoBehaviour
             string file = ifcModelDirectory + modelName + ".ifc";
             IfcDataBase = new DatabaseIfc(file);
 
+            // Shadan:
+            //IfcDataBase.ScaleSI = 0.8;
+
             modelScale = (float)IfcDataBase.ScaleSI;
 
             rootGameObject = new GameObject(modelName);
@@ -525,11 +529,13 @@ public class MainControlScript : MonoBehaviour
             goDictionary = new Dictionary<string, List<IfcCollectiveObject>>();
 
             List<IfcElement> elemList = IfcDataBase.Project.Extract<IfcElement>();
+            
             foreach (IfcElement elem in elemList)
             {
                 try
                 {
                     // Create Object:
+                    
                     IfcCollectiveObject ifcObjectElem = new IfcCollectiveObject(elem, modelScale);
                     SetMaterial(ifcObjectElem);
                     AddGameObjectToCategory(ifcObjectElem);

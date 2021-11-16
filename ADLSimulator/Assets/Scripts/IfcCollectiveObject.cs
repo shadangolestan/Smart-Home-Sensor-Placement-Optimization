@@ -197,6 +197,7 @@ public class IfcCollectiveObject
 
         if (boundingBox != null)
         {
+            //Debug.Log("CUBEEEEEEEEEEEEEE");
             GameObjectBB = IfcMeshUtils.CreateBoundingBoxCube(boundingBox);
             GameObjectBB.name = "cube" + Name;
             BoundingBox = boundingBox;
