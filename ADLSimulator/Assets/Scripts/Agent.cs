@@ -31,6 +31,7 @@ public class Agent : MonoBehaviour
     private float walkingDuration;
     private float idleTime;
     private float previousDataPointTime;
+    private GameObject floor;
 
     public void Start()
     {
@@ -45,6 +46,8 @@ public class Agent : MonoBehaviour
         previousDataPointTime = Time.time;
         actionEndTime = Time.time;
         agentStart = Time.time;
+
+        floor = FindFloor();
     }
 
     public string GetCurrentAction()
@@ -55,6 +58,23 @@ public class Agent : MonoBehaviour
     public float getIdleTime()
     {
         return idleTime;
+    }
+
+    private GameObject FindFloor()
+    {
+
+        GameObject[] gameObjects = (GameObject[])UnityEngine.Object.FindObjectsOfType(typeof(GameObject));
+
+        for (var i = 0; i < gameObjects.Length; i++)
+        {
+            if (gameObjects[i].name.StartsWith("Floor"))
+            {
+                gameObjects[i].AddComponent<BoxCollider>();
+                return gameObjects[i];
+            }
+        }
+
+        return null;
     }
 
     // Checks if the agent has finished performing the action selected
@@ -84,10 +104,14 @@ public class Agent : MonoBehaviour
             //    + position.y + ","
             //    + currentAction + '_' + actionAlias + ",");
 
+            
+            BoxCollider rect = floor.GetComponent<BoxCollider>();
+            //Debug.Log(new Vector3(-rect.bounds.size.x / 2, 0, rect.bounds.size.z / 2));
+
             log.Add(GetTimeString() + ","
                + "1" + "," /* Fake Agent ID */
-               + -1 * (position.x) + ","
-               + (position.z) + ","
+               + (position.x + (rect.bounds.size.x / 2)) + ","
+               + (-position.z + rect.bounds.size.z / 2) + ","
                + position.y + ","
                + currentAction + '_' + actionAlias + ",");
 

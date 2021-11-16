@@ -173,6 +173,7 @@ public class TaskPlanner {
         return false;
     }
 
+
     // We currently recalculate the objects and destinations for each action and there is no form of caching
     // TODO: Prepopulate everything or cache it somehow to prevent unnecessary calculation
     public Vector3 GetActionDestination(string action)
@@ -196,6 +197,15 @@ public class TaskPlanner {
             destination = actionableDestinations[random.Next(actionableDestinations.Count)];
         }
 
+
+        
+
+        // BoxCollider rect = floor.GetComponent<BoxCollider>();
+        // Debug.Log(new Vector3(-rect.bounds.size.x / 2, 0, rect.bounds.size.z / 2));
+
+
+
+  
         return destination;
     }
 
