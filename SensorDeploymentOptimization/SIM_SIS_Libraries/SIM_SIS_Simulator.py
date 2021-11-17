@@ -123,8 +123,8 @@ def InitializeDataset(sensorTypes, FDN):
 
 #DONE
 def VectorizeSensorReadings(fs, time):
-    if len(fs) == 0:
-        print('here we go')
+    # if len(fs) == 0:
+        # print('here we go')
         
     sensor_bins = [0] * sensorsTypes[0][1]
     
@@ -188,6 +188,9 @@ def FindAgentsRoom(x, y):
             y >= rooms[room][0][1] and y <= rooms[room][1][1]):
             return rooms[room], room
 
+    print('Bad point is:', end = ' ')
+    print(x,'  :  ', y)
+        
     return None
     
 def SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, t, i, agent1Loc, agent2Loc = None):
@@ -265,7 +268,7 @@ def RunSimulation(FDN, simulateMotionSensors, simulateEstimotes):
     global df_
     for i in range(1, len(df_)):       
         no_event_flag = 1
-        print('agent loc calculation')
+        # print('agent loc calculation')
         xtrace = float(df_.x[i])
         ytrace = float(df_.y[i])
         
@@ -274,7 +277,7 @@ def RunSimulation(FDN, simulateMotionSensors, simulateEstimotes):
          
         agent1Loc = [xtrace, ytrace]
         
-        print(agent1Loc)
+        # print(agent1Loc)
         
         agent1Loc_previous = [0, 0]
         epsilon = 0.7
@@ -350,11 +353,11 @@ def RunSimulator(space, Rooms, agentTrace, sensorsConfiguration, simulateMotionS
             fig, ax = plt.subplots(figsize = (6.6, 10.5))
             # img = plt.imread("Data//sc.png")        
 
-        print('RunSimulation')
+        # print('RunSimulation')
         RunSimulation(FDN, simulateMotionSensors, simulateEstimotes)
-        print('RunSimulation done')
+        # print('RunSimulation done')
         
-    print('creating ultimate dataset')
+    # print('creating ultimate dataset')
     CreateUltimateDataset(UDN, Epoch)
     
     
