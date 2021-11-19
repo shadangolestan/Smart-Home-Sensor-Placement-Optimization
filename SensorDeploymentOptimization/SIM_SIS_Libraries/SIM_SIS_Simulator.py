@@ -193,7 +193,7 @@ def FindAgentsRoom(x, y):
         
     return None
     
-def SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, t, i, agent1Loc, agent2Loc = None):
+def SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, t, i, agent1Loc, action, agent2Loc = None):
     myfs = []
     for sensor in sensors_list:
         
@@ -231,17 +231,23 @@ def SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, t, i, agent
     VectorizeSensorReadings(myfs, i) 
     
     if (plotflag):
-        xlim=(0, 6)
-        ylim=(0, 10)
+        # fig, ax = plt.subplots(figsize=(8.5, 8.5), dpi=80)
+        from IPython import display
+        import pylab as pl
+        xlim=(0, 8.5)
+        ylim=(0, 8.5)
+
+        
         p1 = ax.plot(agent1Loc[0], agent1Loc[1], marker='+', color='k', lw=10)
         plt.xlim(*xlim)
         plt.ylim(*ylim)
         plt.gca().invert_yaxis()
-        plt.show()
+        # plt.show()
         fig.canvas.draw()
-        ax.cla()
-        # ax.imshow(img, extent=[0, 6.6, 0, 10])
-        
+        plt.title(str((agent1Loc[0], agent1Loc[1])) + " : " + action)
+        # ax.cla()
+        display.clear_output(wait=True)
+        display.display(pl.gcf())
         
 
     
@@ -271,6 +277,7 @@ def RunSimulation(FDN, simulateMotionSensors, simulateEstimotes):
         # print('agent loc calculation')
         xtrace = float(df_.x[i])
         ytrace = float(df_.y[i])
+        action = df_.activity[i]
         
         if (xtrace < 0): xtrace = abs(xtrace)
         if (ytrace < 0): ytrace = abs(ytrace)
@@ -280,7 +287,7 @@ def RunSimulation(FDN, simulateMotionSensors, simulateEstimotes):
         # print(agent1Loc)
         
         agent1Loc_previous = [0, 0]
-        epsilon = 0.7
+        epsilon = 0.0
         
         if (not agent1Loc_previous == agent1Loc):
             agent1Loc_rnd = RegionOfSimilarity(agent1Loc, epsilon)
@@ -289,7 +296,7 @@ def RunSimulation(FDN, simulateMotionSensors, simulateEstimotes):
             
         timetoadd = df_.time[i]
         
-        SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, timetoadd, i, agent1Loc_rnd, None)
+        SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, timetoadd, i, agent1Loc_rnd, action,  None)
     
 def CreateUltimateDataset(UDN, epoch):
     simulated_sensor_readings.append([0]*len(simulated_sensor_readings[0]))
@@ -350,7 +357,7 @@ def RunSimulator(space, Rooms, agentTrace, sensorsConfiguration, simulateMotionS
         sensors_list = MakeSensorsList(sc[1], radius)
         if (plotflag):
             # %matplotlib notebook
-            fig, ax = plt.subplots(figsize = (6.6, 10.5))
+            fig, ax = plt.subplots(figsize = (8.5, 8.5))
             # img = plt.imread("Data//sc.png")        
 
         # print('RunSimulation')
