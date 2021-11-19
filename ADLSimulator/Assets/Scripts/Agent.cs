@@ -108,10 +108,11 @@ public class Agent : MonoBehaviour
             BoxCollider rect = floor.GetComponent<BoxCollider>();
             //Debug.Log(new Vector3(-rect.bounds.size.x / 2, 0, rect.bounds.size.z / 2));
 
+
             log.Add(GetTimeString() + ","
                + "1" + "," /* Fake Agent ID */
-               + (position.x + (rect.bounds.size.x / 2)) + ","
-               + (-position.z + rect.bounds.size.z / 2) + ","
+               + (position.x + (rect.bounds.size.x / 2) - rect.bounds.center.x) + ","
+               + (-position.z + rect.bounds.center.z + (rect.bounds.size.z / 2)) + ","
                + position.y + ","
                + currentAction + '_' + actionAlias + ",");
 

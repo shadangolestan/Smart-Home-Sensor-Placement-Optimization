@@ -173,10 +173,21 @@
             "duration": 5,
             "probability": 100,
             "occurrence": 1,
+            "requires": [ ],
+            "post": [ ],
+            "times": [ ],
+            "aliases": [ "Cleaning Up Table" ]
+        },
+
+        "Sit": {
+            "name": "Sit",
+            "duration": 30,
+            "probability": 100,
+            "occurrence": 1,
             "requires": [],
             "post": [],
             "times": [],
-            "aliases": [ "Cleaning Up Table" ]
+            "aliases": [ "Talking on the phone" ]
         },
 
         "Clean_Kitchen": {
@@ -231,7 +242,7 @@
             "requires": [],
             "post": [],
             "times": [],
-            "aliases": [ "Working_with_tablet", "Read", "Talking on the phone" ]
+            "aliases": [ "Working_with_tablet" ]
         },
 
         "Iron": {
@@ -239,10 +250,21 @@
             "duration": 5,
             "probability": 100,
             "occurrence": 1,
+            "requires": [ ],
+            "post": [ ],
+            "times": [ ],
+            "aliases": [ ]
+        },
+
+        "Sit": {
+            "name": "Sit",
+            "duration": 30,
+            "probability": 100,
+            "occurrence": 1,
             "requires": [],
             "post": [],
             "times": [],
-            "aliases": []
+            "aliases": [ "Read" ]
         },
 
         "Entertainment": {

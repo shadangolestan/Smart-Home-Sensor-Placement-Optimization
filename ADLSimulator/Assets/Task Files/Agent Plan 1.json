@@ -30,7 +30,7 @@
             "requires": [],
             "post": [],
             "times": [],
-            "aliases": [ "Working_with_tablet", "Read", "Talking on the phone" ]
+            "aliases": [ "Working_with_tablet" ]
         },
 
         "Exercise": {
@@ -72,9 +72,20 @@
             "probability": 100,
             "occurrence": 1,
             "requires": [ "Bath" ],
+            "post": [ ],
+            "times": [ ],
+            "aliases": [ ]
+        },
+
+        "Sit": {
+            "name": "Sit",
+            "duration": 30,
+            "probability": 100,
+            "occurrence": 1,
+            "requires": [],
             "post": [],
             "times": [],
-            "aliases": []
+            "aliases": [ "Read" ]
         },
 
         "Make_Tea": {
@@ -148,10 +159,21 @@
             "duration": 2,
             "probability": 100,
             "occurrence": 1,
+            "requires": [ ],
+            "post": [ ],
+            "times": [ ],
+            "aliases": [ ]
+        },
+
+        "Sit": {
+            "name": "Sit",
+            "duration": 15,
+            "probability": 100,
+            "occurrence": 1,
             "requires": [],
             "post": [],
             "times": [],
-            "aliases": []
+            "aliases": [ "Talking on the phone" ]
         },
 
         "Sleep": {
