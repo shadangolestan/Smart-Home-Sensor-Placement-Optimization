@@ -327,83 +327,103 @@ class GA:
         return C
 
     def PreProcessor(self, df):
-        # df['motion sensors'] = df['motion sensors'].apply(ast.literal_eval)
-        df['motion sensors'] = df['motion sensors'].apply(lambda s: list(map(int, s)))
-        # df['beacon sensors'] = df['beacon sensors'].apply(ast.literal_eval)
-        try:
-          df['beacon sensors'] = df['beacon sensors'].apply(lambda s: list(map(int, s)))
-        except:
-          pass
+            # df['motion sensors'] = df['motion sensors'].apply(ast.literal_eval)
+            df['motion sensors'] = df['motion sensors'].apply(lambda s: list(map(int, s)))
+            #df['motion sensors'] = df['motion sensors'].apply(lambda s: s + [1])
+            # df['beacon sensors'] = df['beacon sensors'].apply(ast.literal_eval)
+            try:
+              df['beacon sensors'] = df['beacon sensors'].apply(lambda s: list(map(int, s)))
+            except:
+              pass
 
-        sensors = set([])
+            pre_activity = ''
+            save_index = 0
 
-        previous_M = None
-        previous_B = None
-        output_file = []
+            for index, row in df.iterrows():
+                save_index = index
+                Activity = row['activity']
 
-        for index, row in df.iterrows():
-          T = row['time']
-          M = row['motion sensors']
-          try:
-            B = row['beacon sensors']
-          except:
-            pass
+                if Activity != pre_activity:
+                    if pre_activity != '':
+                        df.at[index - 1, 'motion sensors'] += [0]
+                    else:
+                        df.at[index, 'motion sensors'] += [1]
 
-          Activity = row['activity']
-          Activity = Activity.replace(' ', '_')
-          MotionSensor_Names = []
-          sensorNames = []
-          MotionSensor_Message = []
-          BeaconSensor_Names = []
-          BeaconSensor_Message = []
-          
+                    pre_activity = Activity
+                else:
+                    df.at[index - 1, 'motion sensors'] += [1]
 
-          # time = convertTime(T)
-          time = "2020-06-16 " + T + ".00"
+            df.at[save_index, 'motion sensors'] += [0]
 
-          # Motion Sensor
-          for i in range(len(M)):
-            sensorNames.append(self.Name(i, 'M'))
-            if M[i] == 1:
-              if (previous_M != None):
-                if (previous_M[i] == 0):
-                  MotionSensor_Names.append(self.Name(i,'M'))
-                  MotionSensor_Message.append('ON')
+            sensors = set([])
 
-              else:
-                MotionSensor_Names.append(self.Name(i,'M'))
-                MotionSensor_Message.append('ON')
+            previous_M = None
+            previous_B = None
+            output_file = []
 
-            if previous_M != None:
-              if M[i] == 0 and previous_M[i] == 1:
-                MotionSensor_Names.append(self.Name(i,'M'))
-                MotionSensor_Message.append('OFF')
+            for index, row in df.iterrows():
+              T = row['time']
+              M = row['motion sensors']
+              try:
+                B = row['beacon sensors']
+              except:
+                pass
 
-          previous_M = M
-          # Beacon Sensor
+              Activity = row['activity']
+              Activity = Activity.replace(' ', '_')
+              MotionSensor_Names = []
+              sensorNames = []
+              MotionSensor_Message = []
+              BeaconSensor_Names = []
+              BeaconSensor_Message = []
+      
 
-          try:
-            for i in range(len(B)):
-              sensorNames.append(self.Name(i, 'B'))
-              if B[i] == 1:
-                BeaconSensor_Names.append(self.Name(i,'B'))
-                BeaconSensor_Message.append('ON')
-              if previous_B != None:
-                if B[i] == 0 and previous_B[i] == 1: 
-                  BeaconSensor_Names.append(self.Name(i,'B'))
-                  BeaconSensor_Message.append('OFF')
-            previous_B = B
+              # time = convertTime(T)
+              time = "2020-06-16 " + T + ".00"
 
-          except:
-            pass
+              # Motion Sensor
+              for i in range(len(M)):
+                sensorNames.append(Name(i, 'M'))
+                if M[i] == 1:
+                  if (previous_M != None):
+                    if (previous_M[i] == 0):
+                      MotionSensor_Names.append(Name(i,'M'))
+                      MotionSensor_Message.append('ON')
 
-          for m in range(len(MotionSensor_Names)):
-            output_file.append(time +' '+ MotionSensor_Names[m] + ' ' + MotionSensor_Names[m] + ' ' + MotionSensor_Message[m] + ' ' + Activity)
-            
-          for s in sensorNames:
-              sensors.add(s)
+                  else:
+                    MotionSensor_Names.append(Name(i,'M'))
+                    MotionSensor_Message.append('ON')
 
-        return output_file, list(sensors)
+                if previous_M != None:
+                  if M[i] == 0 and previous_M[i] == 1:
+                    MotionSensor_Names.append(Name(i,'M'))
+                    MotionSensor_Message.append('OFF')
+
+              previous_M = M
+              # Beacon Sensor
+
+              try:
+                for i in range(len(B)):
+                  sensorNames.append(Name(i, 'B'))
+                  if B[i] == 1:
+                    BeaconSensor_Names.append(Name(i,'B'))
+                    BeaconSensor_Message.append('ON')
+                  if previous_B != None:
+                    if B[i] == 0 and previous_B[i] == 1: 
+                      BeaconSensor_Names.append(Name(i,'B'))
+                      BeaconSensor_Message.append('OFF')
+                previous_B = B
+
+              except:
+                pass
+
+              for m in range(len(MotionSensor_Names)):
+                output_file.append(time +' '+ MotionSensor_Names[m] + ' ' + MotionSensor_Names[m] + ' ' + MotionSensor_Message[m] + ' ' + Activity)
+        
+              for s in sensorNames:
+                  sensors.add(s)
+
+            return output_file, list(sensors)
 
     #returns the name of the sensor
     def Name(self, number, typeSensor):
