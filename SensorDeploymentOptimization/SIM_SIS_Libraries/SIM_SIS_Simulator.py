@@ -100,6 +100,7 @@ def InitializeDataset(sensorTypes, FDN):
         datasetColumns.append(st[0])
     
     tempdf = (pd.read_csv(FDN, index_col = False))
+   
     
     df_ = pd.DataFrame(columns = datasetColumns)
     
@@ -157,14 +158,37 @@ def VectorizeSensorReadings(fs, time):
         except:
             pass
             
-#DONE
-def RegionOfSimilarity(exactLocation, epsilon):
+            
+def AddRandomnessToDatasets(epsilon, data_path, rooms):
+    import pandas as pd
+    import os
+    
+    directory = os.fsencode(data_path + 'Agent Trace Files/')
+    
+    for file in os.listdir(directory):
+        # print(os.fsdecode(directory + file))
+        data = pd.read_csv(os.fsdecode(directory + file), index_col = False)
+        
+        # print(data)
+        
+        for i in range(1, len(data)):
+            xtrace = float(data.x[i])
+            ytrace = float(data.y[i])
 
+            agent1Loc = [xtrace, ytrace]
+            agent1Loc_rnd = RegionOfSimilarity(agent1Loc, epsilon, rooms)
+            data.at[i, 'x'] = agent1Loc_rnd[0]
+            data.at[i, 'y'] = agent1Loc_rnd[1]
+
+        data.to_csv(os.fsdecode(directory + file) + "UPDATED.csv", sep=',', index=False)
+            
+#DONE
+def RegionOfSimilarity(exactLocation, epsilon, rooms):    
     new_x =  uniform(max(exactLocation[0] - epsilon, 0), exactLocation[0] + epsilon)
     new_y =  uniform(max(exactLocation[1] - epsilon, 0), exactLocation[1] + epsilon)
     
     
-    room, name = FindAgentsRoom(exactLocation[0], exactLocation[1])
+    room, name = FindAgentsRoom(exactLocation[0], exactLocation[1], rooms)
     
     new_x = min(max(room[0][0], new_x) + 0.1, room[1][0]) - 0.1
     new_y = min(max(room[0][1], new_y) + 0.1, room[1][1]) - 0.1
@@ -182,7 +206,7 @@ def RecContains(x, y, sensor_room):
     return False
 
 #DONE
-def FindAgentsRoom(x, y):
+def FindAgentsRoom(x, y, rooms):
     for room in rooms:
         if (x >= rooms[room][0][0] and x <= rooms[room][1][0] and
             y >= rooms[room][0][1] and y <= rooms[room][1][1]):
@@ -279,24 +303,15 @@ def RunSimulation(FDN, simulateMotionSensors, simulateEstimotes):
         ytrace = float(df_.y[i])
         action = df_.activity[i]
         
-        if (xtrace < 0): xtrace = abs(xtrace)
-        if (ytrace < 0): ytrace = abs(ytrace)
+        # if (xtrace < 0): xtrace = abs(xtrace)
+        # if (ytrace < 0): ytrace = abs(ytrace)
          
-        agent1Loc = [xtrace, ytrace]
-        
-        # print(agent1Loc)
-        
+        agent1Loc = [xtrace, ytrace] 
         agent1Loc_previous = [0, 0]
-        epsilon = 0.0
-        
-        if (not agent1Loc_previous == agent1Loc):
-            agent1Loc_rnd = RegionOfSimilarity(agent1Loc, epsilon)
-            # agent1Loc_rnd = agent1Loc
-            agent1Loc_previous = agent1Loc
             
         timetoadd = df_.time[i]
         
-        SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, timetoadd, i, agent1Loc_rnd, action,  None)
+        SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, timetoadd, i, agent1Loc, action,  None)
     
 def CreateUltimateDataset(UDN, epoch):
     simulated_sensor_readings.append([0]*len(simulated_sensor_readings[0]))
@@ -341,6 +356,7 @@ def RunSimulator(space, Rooms, agentTrace, sensorsConfiguration, simulateMotionS
     Epoch = 1
     # FDN = Data_path + 'Data//Pandas Datasets//ARTEST'
     FDN = agentTrace
+    
     UDN = Data_path + "/Results/DatasetForAgent"
     
     sc = sensorsConfiguration[0]

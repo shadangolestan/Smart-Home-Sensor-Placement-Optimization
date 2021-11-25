@@ -123,7 +123,7 @@ class Chromosome:
 
 class GA:
     chromosomes = []
-    def __init__(self, population, initializationMethod, Data_path, epsilon, initSensorNum, maxSensorNum, radius, mutation_rate, crossover, survival_rate, reproduction_rate):
+    def __init__(self, population, initializationMethod, Data_path, epsilon, initSensorNum, maxSensorNum, radius, mutation_rate, crossover, survival_rate, reproduction_rate, ROS):
         self.population = population
         self.mode = initializationMethod
         self.Data_path = Data_path
@@ -136,7 +136,7 @@ class GA:
         self.survival_rate = survival_rate
         self.reproduction_rate = reproduction_rate
         
-        self.sensor_distribution, self.types, self.space, self.rooms, self.agentTraces = self.ModelsInitializations()
+        self.sensor_distribution, self.types, self.space, self.rooms, self.agentTraces = self.ModelsInitializations(ROS)
         
         for i in range(population):
             self.chromosomes.append(Chromosome(self.mode, self.space, self.initSensorNum, self.epsilon))
@@ -230,17 +230,23 @@ class GA:
         
         return l, q
 
-    def ModelsInitializations(self):
+    def ModelsInitializations(self, ROS):
         #----- Space and agent models -----: 
         simworldname = self.Data_path + '/Configuration Files/simulationWorld2.xml'
         agentTraces = []
         import os
-        directory = os.fsencode(self.Data_path + 'Agent Trace Files/')
+        if ROS:
+            directory = os.fsencode(self.Data_path + 'Agent Trace Files ROS/')
+        else:
+            directory = os.fsencode(self.Data_path + 'Agent Trace Files/')
             
         for file in os.listdir(directory):
             filename = os.fsdecode(file)
             if filename.endswith(".csv"): 
-                agentTraces.append(self.Data_path + 'Agent Trace Files/' + filename)
+                if ROS:
+                    agentTraces.append(self.Data_path + 'Agent Trace Files ROS/' + filename)
+                else:
+                    agentTraces.append(self.Data_path + 'Agent Trace Files/' + filename)
 
         # Parsing the space model: 
         space, rooms = pf.ParseWorld(simworldname)
@@ -544,7 +550,8 @@ def convertTime(posix_timestamp):
     time = dt.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
     return time
 
-def ModelsInitializations(Data_path):
+'''
+def ModelsInitializations(Data_path, ROS):
     #----- Space and agent models -----: 
     simworldname = Data_path + '/Configuration Files/simulationWorld2.xml'
     agentTraces = []
@@ -576,20 +583,21 @@ def ModelsInitializations(Data_path):
         roomsList.append(room)
 
     return sensor_distribution, types, space, rooms, agentTraces
-    
+'''    
     
 def run(run_on_google_colab = False, 
-       iteration = 100, 
-       population = 10,
-       epsilon = 1, # The distance between two nodes in the space grid:
-       initSensorNum = 14, # initial sensor numbers
-       maxSensorNum = 25,  # max sensor numbers
-       radius = 1, # radius of the motion sensors
-       mutation_rate = 0.005, # Mutation rate for each item in a chromosome's data (each sensor placeholder)
-       crossover = 2, # number of folds in the crossover process
-       survival_rate = 0.1, # top % of the sorted chromosomes of each generation that goes to the next generation
-       reproduction_rate = 0.2, # top % of the sorted chromosomes of each generation that contributes in breeding children
-       print_epochs = True
+        iteration = 100, 
+        population = 10,
+        epsilon = 1, # The distance between two nodes in the space grid:
+        initSensorNum = 14, # initial sensor numbers
+        maxSensorNum = 25,  # max sensor numbers
+        radius = 1, # radius of the motion sensors
+        mutation_rate = 0.005, # Mutation rate for each item in a chromosome's data (each sensor placeholder)
+        crossover = 2, # number of folds in the crossover process
+        survival_rate = 0.1, # top % of the sorted chromosomes of each generation that goes to the next generation
+        reproduction_rate = 0.2, # top % of the sorted chromosomes of each generation that contributes in breeding children
+        print_epochs = True,
+        ROS = False
       ):
        
         global runningOnGoogleColab
@@ -630,7 +638,8 @@ def run(run_on_google_colab = False,
                 mutation_rate, 
                 crossover, 
                 survival_rate, 
-                reproduction_rate)
+                reproduction_rate,
+                ROS)
 
         ga.RunFitnessFunction(True, False, False, 1)
 
