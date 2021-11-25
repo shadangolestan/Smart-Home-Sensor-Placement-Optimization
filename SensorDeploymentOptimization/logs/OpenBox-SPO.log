@@ -1,0 +1,7 @@
+[WARNING] [2021-11-25 15:52:27,762] [OpenBox-SPO] Exception when calling objective function: name 'BOV' is not defined
+[INFO] [2021-11-25 15:52:27,763] [OpenBox-SPO] Iteration 1, objective value: [2147483647].
+[WARNING] [2021-11-25 15:54:02,697] [OpenBox-SPO] Exception when calling objective function: No module named 'al'
+[INFO] [2021-11-25 15:54:02,699] [OpenBox-SPO] Iteration 1, objective value: [2147483647].
+[INFO] [2021-11-25 16:09:34,743] [OpenBox-SPO] Iteration 1, objective value: [89.10942794579158].
+[INFO] [2021-11-25 16:12:23,211] [OpenBox-SPO] Iteration 1, objective value: [81.08216190127955].
+[INFO] [2021-11-25 16:14:02,926] [OpenBox-SPO] Iteration 1, objective value: [81.5413197913198].

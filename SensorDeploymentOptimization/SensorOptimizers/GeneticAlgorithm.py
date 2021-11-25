@@ -283,7 +283,7 @@ class GA:
                 else:
                     # sys.path.append('../../Codes/SensorDeploymentOptimization/')
                     sys.path.append('..')
-                    Data_path = '../../Codes/SensorDeploymentOptimization/'
+                    Data_path = '../SensorDeploymentOptimization/'
 
                 all_sensors = set([])
 
@@ -301,7 +301,7 @@ class GA:
                     sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/CASAS/AL-Smarthome')
 
                 else:
-                    sys.path.append('../../Codes/CASAS/AL-Smarthome')
+                    sys.path.append('../CASAS/AL-Smarthome')
 
                 import al
                 import imp
@@ -613,7 +613,7 @@ def run(run_on_google_colab = False,
             sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/')
 
         else:
-            Data_path = '../../Codes/SensorDeploymentOptimization/'
+            Data_path = '../SensorDeploymentOptimization/'
             # sys.path.append('../../Codes/SensorDeploymentOptimization/')
             sys.path.append('..')
 
