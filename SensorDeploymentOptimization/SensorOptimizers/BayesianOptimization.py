@@ -335,8 +335,8 @@ def function_to_be_optimized(config):
 
     for i in range(1, CONSTANTS['max_sensors'] + 1):
         # if (config['x' + str(i)] > 0):
-        sensor_xy.append(config['x' + str(i)])
-        sensor_xy.append(config['y' + str(i)])
+        sensor_xy.append(config['x' + str(i)] * CONSTANTS['epsilon'])
+        sensor_xy.append(config['y' + str(i)] * CONSTANTS['epsilon'])
         sensorPositions.append(sensor_xy)
         sensor_xy = []
 
@@ -357,7 +357,7 @@ def run(surrogate_type = 'prf',
         run_on_colab = False, 
         iteration = 1000, 
         epsilon = 1, # The distance between two nodes in the space grid:
-        maxSensorNum = 25,  # max sensor numbers
+        maxSensorNum = 15,  # max sensor numbers
         radius = 1, # radius of the motion sensors
         print_epochs = True,
         height = 8.0,
@@ -417,8 +417,8 @@ def run(surrogate_type = 'prf',
 
     list_of_variables = []
     for i in range(1, CONSTANTS['max_sensors'] + 1):
-        x = sp.Int("x" + str(i), 1, CONSTANTS['width'] - 1, default_value=1)
-        y = sp.Int("y" + str(i), 1, CONSTANTS['height'] - 1, default_value=1)
+        x = sp.Int("x" + str(i), 1, (CONSTANTS['width'] - 1) / CONSTANTS['epsilon'], default_value=1)
+        y = sp.Int("y" + str(i), 1, (CONSTANTS['height'] - 1) / CONSTANTS['epsilon'], default_value=1)
         list_of_variables.append(x)
         list_of_variables.append(y)
     

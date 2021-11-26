@@ -4,8 +4,8 @@ import pickle
 
 ROS = True
 
-for i in range(0, 5):
-    history = bo.run(iteration = 1, epsilon = 1, ROS = True)
+for i in range(0, 1):
+    history = bo.run(iteration = 1, epsilon = 0.5, ROS = True)
 
     if ROS == True:
         with open('openbox_results_single_objective_ROS/history_' + str(i), 'wb') as handle:
