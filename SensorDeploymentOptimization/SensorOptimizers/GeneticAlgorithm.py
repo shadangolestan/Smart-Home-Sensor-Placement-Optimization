@@ -275,15 +275,15 @@ class GA:
             if (chromosome.fitness == -1):
                 files = []
 
-                import sys
-                if (runningOnGoogleColab == True):
-                    sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/')
-                    Data_path = 'gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/'
+                # import sys
+                # if (runningOnGoogleColab == True):
+                #     sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/')
+                #     Data_path = 'gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/'
                     
-                else:
-                    # sys.path.append('../../Codes/SensorDeploymentOptimization/')
-                    sys.path.append('..')
-                    Data_path = '../SensorDeploymentOptimization/'
+                # else:
+                #     # sys.path.append('../../Codes/SensorDeploymentOptimization/')
+                #     sys.path.append('..')
+                #     Data_path = '../SensorDeploymentOptimization/'
 
                 all_sensors = set([])
 
@@ -297,13 +297,13 @@ class GA:
                     
                 
 
-                if (runningOnGoogleColab == True):
-                    sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/CASAS/AL-Smarthome')
+                # if (runningOnGoogleColab == True):
+                #     sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/CASAS/AL-Smarthome')
 
-                else:
-                    sys.path.append('../CASAS/AL-Smarthome')
+                # else:
+                #     sys.path.append('../CASAS/AL-Smarthome')
 
-                import al
+                import CASAS.al as al
                 import imp
                 imp.reload(al)
                 all_sensors = list(all_sensors)
@@ -623,6 +623,7 @@ def run(run_on_google_colab = False,
         # random.seed(random_seed)
 
         results = []
+        best_configuration_history = []
 
         print('----- Running GA for epsilon = ' + str(epsilon))
         f = IntProgress(min=0, max=iteration) # instantiate the bar
@@ -657,6 +658,7 @@ def run(run_on_google_colab = False,
                         ga.AverageAnswer()))
 
             results.append([(c.fitness + (sum(c.grid) / 100) * 100, sum(c.grid)) for c in ga.chromosomes])
+            best_configuration_history.append(ga.chromosomes[0])
             
-        return results
+        return results, best_configuration_history
         
