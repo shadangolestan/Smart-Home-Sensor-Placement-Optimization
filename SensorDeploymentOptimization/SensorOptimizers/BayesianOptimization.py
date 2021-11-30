@@ -322,7 +322,12 @@ def black_box_function(sample, simulateMotionSensors = True, simulateEstimotes =
     # imp.reload(al)
     all_sensors = list(all_sensors)
 
-    f1_score = (al.leave_one_out(files, all_sensors)[0]) * 100
+    
+    if multi_objective_flag == True:
+        f1_score = (al.leave_one_out(files, all_sensors)[0]) * 100 - len(sample.placeHolders)
+        
+    else:
+        f1_score = (al.leave_one_out(files, all_sensors)[0]) * 100
 
     if f1_score < 0:
         f1_score = 0
@@ -334,11 +339,20 @@ def function_to_be_optimized(config):
     sensor_xy = []
 
     for i in range(1, CONSTANTS['max_sensors'] + 1):
-        # if (config['x' + str(i)] > 0):
-        sensor_xy.append(config['x' + str(i)] * CONSTANTS['epsilon'])
-        sensor_xy.append(config['y' + str(i)] * CONSTANTS['epsilon'])
-        sensorPositions.append(sensor_xy)
-        sensor_xy = []
+        if multi_objective_flag == True:
+            if (config['x' + str(i)] > 0):
+                sensor_xy.append(config['x' + str(i)] * CONSTANTS['epsilon'])
+                sensor_xy.append(config['y' + str(i)] * CONSTANTS['epsilon'])
+                sensorPositions.append(sensor_xy)
+                sensor_xy = []
+
+                
+        else:
+            sensor_xy.append(config['x' + str(i)] * CONSTANTS['epsilon'])
+            sensor_xy.append(config['y' + str(i)] * CONSTANTS['epsilon'])
+            sensorPositions.append(sensor_xy)
+            sensor_xy = []
+
 
           
     # print(sensorPositions)
@@ -362,12 +376,15 @@ def run(surrogate_type = 'prf',
         print_epochs = True,
         height = 8.0,
         width = 8.0,
-        ROS = False
+        ROS = False,
+        multi_objective = False
       ):
 
+    global multi_objective_flag
     global CONSTANTS
     global runningOnGoogleColab
     runningOnGoogleColab = run_on_colab
+    multi_objective_flag = multi_objective
     CONSTANTS = {
         'iterations': iteration,
         'initial_samples': 10,
@@ -415,30 +432,56 @@ def run(surrogate_type = 'prf',
     # Define Search Space
     space = sp.Space()
 
-    list_of_variables = []
-    for i in range(1, CONSTANTS['max_sensors'] + 1):
-        x = sp.Int("x" + str(i), 1, (CONSTANTS['width'] - 1) / CONSTANTS['epsilon'], default_value=1)
-        y = sp.Int("y" + str(i), 1, (CONSTANTS['height'] - 1) / CONSTANTS['epsilon'], default_value=1)
-        list_of_variables.append(x)
-        list_of_variables.append(y)
     
-    space.add_variables(list_of_variables)
+    if (multi_objective == False):
+        list_of_variables = []
+        for i in range(1, CONSTANTS['max_sensors'] + 1):
+            x = sp.Int("x" + str(i), 1, (CONSTANTS['width'] - 1) / CONSTANTS['epsilon'], default_value=1)
+            y = sp.Int("y" + str(i), 1, (CONSTANTS['height'] - 1) / CONSTANTS['epsilon'], default_value=1)
+            list_of_variables.append(x)
+            list_of_variables.append(y)
 
-    history_list = []
+        space.add_variables(list_of_variables)
 
-    opt = Optimizer(
-        function_to_be_optimized,
-        space,
-        # num_objs=2,
-        max_runs = CONSTANTS['iterations'],
-        surrogate_type = surrogate_type,
-        # acq_type = 'ehvi',
-        acq_optimizer_type = acq_optimizer_type,
-        time_limit_per_trial=31000,
-        task_id = task_id,
-        # init_strategy='sobol',
-        # ref_point=[100, 15]
-    )
-    history = opt.run()
+        history_list = []
+
+        opt = Optimizer(
+            function_to_be_optimized,
+            space,
+            # num_objs=2,
+            max_runs = CONSTANTS['iterations'],
+            surrogate_type = surrogate_type,
+            # acq_type = 'ehvi',
+            acq_optimizer_type = acq_optimizer_type,
+            time_limit_per_trial=31000,
+            task_id = task_id,
+            # init_strategy='sobol',
+            # ref_point=[100, 15]
+        )
+        history = opt.run()
             
+    
+    else:
+        list_of_variables = []
+        for i in range(1, CONSTANTS['max_sensors'] + 1):
+            x = sp.Int("x" + str(i), -1, (CONSTANTS['width'] - 1) / CONSTANTS['epsilon'], default_value=1)
+            y = sp.Int("y" + str(i), -1, (CONSTANTS['height'] - 1) / CONSTANTS['epsilon'], default_value=1)
+            list_of_variables.append(x)
+            list_of_variables.append(y)
+
+        space.add_variables(list_of_variables)
+
+        history_list = []
+
+        opt = Optimizer(
+            function_to_be_optimized,
+            space,
+            max_runs = CONSTANTS['iterations'],
+            surrogate_type = surrogate_type,
+            acq_optimizer_type = acq_optimizer_type,
+            time_limit_per_trial=31000,
+            task_id = task_id,
+        )
+        history = opt.run()
+    
     return history
