@@ -284,17 +284,6 @@ def MakeDataBoundaries(height = 10.5, width = 6.6, MaxSensors = 15):
 
 def black_box_function(sample, simulateMotionSensors = True, simulateEstimotes = False, Plotting = False):       
     files = []
-
-    # import sys
-    # if (runningOnGoogleColab == True):
-    #     sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/')
-    #     Data_path = 'gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/'
-
-    # else:
-        # sys.path.append('../../Codes/SensorDeploymentOptimization/')
-    #     sys.path.append('..')
-    #     Data_path = '../../Codes/SensorDeploymentOptimization/'
-
     all_sensors = set([])
 
     for agentTrace in BOV.agentTraces:
@@ -311,32 +300,22 @@ def black_box_function(sample, simulateMotionSensors = True, simulateEstimotes =
         all_sensors.update(sensors)
         files.append(dataFile)
         
-    
-    if (runningOnGoogleColab == True):
-        sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/CASAS/AL-Smarthome')
 
-    else:
-        sys.path.append('../../Codes/CASAS/AL-Smarthome')
-
-    # import imp
-    # imp.reload(al)
     all_sensors = list(all_sensors)
-
     
-    if multi_objective_flag == True:
-        f1_score = (al.leave_one_out(files, all_sensors)[0]) * 100 - len(sample.placeHolders)
-        
-    else:
-        f1_score = (al.leave_one_out(files, all_sensors)[0]) * 100
-
-    if f1_score < 0:
-        f1_score = 0
-
-    return 100 - f1_score
+    f1_score = (al.leave_one_out(files, all_sensors)[0]) * 100
+    
+    try:
+        return f1_score[0]
+    
+    except:
+        return f1_score
 
 def function_to_be_optimized(config):
     sensorPositions = []
     sensor_xy = []
+    
+    excluded = []
 
     for i in range(1, CONSTANTS['max_sensors'] + 1):
         if multi_objective_flag == True:
@@ -344,6 +323,14 @@ def function_to_be_optimized(config):
                 sensor_xy.append(config['x' + str(i)] * CONSTANTS['epsilon'])
                 sensor_xy.append(config['y' + str(i)] * CONSTANTS['epsilon'])
                 sensorPositions.append(sensor_xy)
+                
+                sensor_xy = []
+                
+            else:
+                sensor_xy.append(config['x' + str(i)] * CONSTANTS['epsilon'])
+                sensor_xy.append(config['y' + str(i)] * CONSTANTS['epsilon'])
+                excluded.append(sensor_xy)
+                
                 sensor_xy = []
 
                 
@@ -353,17 +340,13 @@ def function_to_be_optimized(config):
             sensorPositions.append(sensor_xy)
             sensor_xy = []
 
-
-          
-    # print(sensorPositions)
     data = Data(sensorPositions, BOV.space, CONSTANTS['epsilon'])
+            
+    if multi_objective_flag == True:
+        return 100 - black_box_function(data) - len(sensorPositions)
     
-    # print(data.GetSensorConfiguration())
-    # result = dict()
-
-    # result['objs'] = np.stack([black_box_function(data), len(sensorPositions)], axis=-1)
-    
-    return black_box_function(data)
+    else:
+        return 100 - black_box_function(data)
 
 def run(surrogate_type = 'prf',
         acq_optimizer_type = 'random_scipy',
@@ -433,7 +416,7 @@ def run(surrogate_type = 'prf',
     space = sp.Space()
 
     
-    if (multi_objective == False):
+    if (multi_objective_flag == False):
         list_of_variables = []
         for i in range(1, CONSTANTS['max_sensors'] + 1):
             x = sp.Int("x" + str(i), 1, (CONSTANTS['width'] - 1) / CONSTANTS['epsilon'], default_value=1)
@@ -464,8 +447,8 @@ def run(surrogate_type = 'prf',
     else:
         list_of_variables = []
         for i in range(1, CONSTANTS['max_sensors'] + 1):
-            x = sp.Int("x" + str(i), -1, (CONSTANTS['width'] - 1) / CONSTANTS['epsilon'], default_value=1)
-            y = sp.Int("y" + str(i), -1, (CONSTANTS['height'] - 1) / CONSTANTS['epsilon'], default_value=1)
+            x = sp.Int("x" + str(i), 0, (CONSTANTS['width'] - 1) / CONSTANTS['epsilon'], default_value=1)
+            y = sp.Int("y" + str(i), 1, (CONSTANTS['height'] - 1) / CONSTANTS['epsilon'], default_value=1)
             list_of_variables.append(x)
             list_of_variables.append(y)
 
