@@ -4,11 +4,12 @@ import pickle
 
 ROS = True
 epsilon = 1
+multi_objective = True
 
 print('----- Running BO for epsilon: ', epsilon)
 
 for i in range(0, 5):
-    history = bo.run(iteration = 1000, epsilon = epsilon, ROS = True, multi_objective = True)
+    history = bo.run(iteration = 1000, epsilon = epsilon, ROS = True, multi_objective = multi_objective)
 
     if ROS == True:
         with open('openbox_results_single_objective_ROS/history_' + str(i), 'wb') as handle:

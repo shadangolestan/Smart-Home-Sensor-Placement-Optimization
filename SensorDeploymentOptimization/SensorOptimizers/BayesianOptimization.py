@@ -343,7 +343,7 @@ def function_to_be_optimized(config):
     data = Data(sensorPositions, BOV.space, CONSTANTS['epsilon'])
             
     if multi_objective_flag == True:
-        return 100 - black_box_function(data) - len(sensorPositions)
+        return 100 - black_box_function(data) + len(sensorPositions)
     
     else:
         return 100 - black_box_function(data)
