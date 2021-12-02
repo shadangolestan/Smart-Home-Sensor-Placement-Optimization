@@ -1,3 +1,24 @@
+import sys
+from scipy.stats import norm
+from numpy import argmax
+import SIM_SIS_Libraries.SensorsClass
+import SIM_SIS_Libraries.SIM_SIS_Simulator as sim_sis
+import SIM_SIS_Libraries.ParseFunctions as pf
+import itertools
+import numpy as np
+import pandas as pd
+import SIM_SIS_Libraries.PreDeploymentEvaluation as pde
+import copy
+from datetime import datetime
+import pytz
+import ast
+import os
+import random
+import plotly
+from openbox import Optimizer
+import CASAS.al as al
+import pickle
+
 class Data:
     def __init__(self, sensorPositions, space, epsilon):
         self.radius = 1
@@ -263,17 +284,6 @@ def MakeDataBoundaries(height = 10.5, width = 6.6, MaxSensors = 15):
 
 def black_box_function(sample, simulateMotionSensors = True, simulateEstimotes = False, Plotting = False):       
     files = []
-
-    import sys
-    if (runningOnGoogleColab == True):
-        sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/')
-        Data_path = 'gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/'
-
-    else:
-        # sys.path.append('../../Codes/SensorDeploymentOptimization/')
-        sys.path.append('..')
-        Data_path = '../../Codes/SensorDeploymentOptimization/'
-
     all_sensors = set([])
 
     for agentTrace in BOV.agentTraces:
@@ -290,79 +300,67 @@ def black_box_function(sample, simulateMotionSensors = True, simulateEstimotes =
         all_sensors.update(sensors)
         files.append(dataFile)
         
-    
-    if (runningOnGoogleColab == True):
-        sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/CASAS/AL-Smarthome')
 
-    else:
-        sys.path.append('../../Codes/CASAS/AL-Smarthome')
-
-    import al
-    import imp
-    imp.reload(al)
     all_sensors = list(all_sensors)
-
+    
     f1_score = (al.leave_one_out(files, all_sensors)[0]) * 100
-
-    if f1_score < 0:
-        f1_score = 0
-
-    return 100 - f1_score
+    
+    try:
+        return f1_score[0]
+    
+    except:
+        return f1_score
 
 def function_to_be_optimized(config):
     sensorPositions = []
-    sensor_xy = []
 
-    for i in range(1, CONSTANTS['max_sensors'] + 1):
-        # if (config['x' + str(i)] > 0):
-        sensor_xy.append(config['x' + str(i)])
-        sensor_xy.append(config['y' + str(i)])
-        sensorPositions.append(sensor_xy)
-        sensor_xy = []
-
-          
-    # print(sensorPositions)
-    data = Data(sensorPositions, BOV.space, CONSTANTS['epsilon'])
-    
-    # print(data.GetSensorConfiguration())
-    # result = dict()
-
-    # result['objs'] = np.stack([black_box_function(data), len(sensorPositions)], axis=-1)
-    
-    return black_box_function(data)
-
-
-# In[ ]:
-
-
-CONSTANTS = {
-    'iterations': 100,
-    'initial_samples': 10,
-    'restarts_number': 10,
-    'raw_samples': 10,
-    'candidates_num': 1,
-    'sequential': True,
-    'epsilon': 1,
-    'radius': 1,
-    'height': 8.0,
-    'width': 8.0,
-    'max_sensors': 15
-}
-
-runningOnGoogleColab = False
-    
-if __name__ ==  '__main__':
-    import sys
-
-    # if (runningOnGoogleColab == True):
-    #     from google.colab import drive    
-    #     drive.mount('/content/gdrive', force_remount=True)
-    #     Data_path = 'gdrive/My Drive/PhD/Thesis/Ideas/Codes/Sensor Simulator/'
-    #     sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/Sensor Simulator/')
+    for i in range(len(config)):
+        if config['x' + str(i)] >= 1:
+            sensorPositions.append([int((i / CONSTANTS['width'])) * CONSTANTS['epsilon'], 
+                                    int((i % CONSTANTS['width'])) * CONSTANTS['epsilon']])
         
-    # else:
-    #     Data_path = '../../Codes/Sensor Simulator/'
-    #     sys.path.append('../../Codes/Sensor Simulator/')
+    result = dict()
+    
+    if (len(sensorPositions) > 0):
+        data = Data(sensorPositions, BOV.space, CONSTANTS['epsilon'])    
+        result['objs'] = [100 - black_box_function(data), ]
+        
+    else:
+        result['objs'] = [100 - 0, ]
+    
+    result['constraints'] = [len(sensorPositions) - CONSTANTS['max_sensors'], ]
+    return result
+        
+
+def run(surrogate_type = 'prf',
+        acq_optimizer_type = 'random_scipy',
+        task_id = 'SPO',
+        run_on_colab = False, 
+        iteration = 1000, 
+        epsilon = 1, # The distance between two nodes in the space grid:
+        maxSensorNum = 15,  # max sensor numbers
+        radius = 1, # radius of the motion sensors
+        print_epochs = True,
+        height = 8.0,
+        width = 8.0,
+        ROS = False,
+        multi_objective = False
+      ):
+
+    global multi_objective_flag
+    global CONSTANTS
+    global runningOnGoogleColab
+    runningOnGoogleColab = run_on_colab
+    multi_objective_flag = multi_objective
+    CONSTANTS = {
+        'iterations': iteration,
+        'initial_samples': 10,
+        'epsilon': epsilon,
+        'radius': radius,
+        'height': height,
+        'width': width,
+        'max_sensors': maxSensorNum
+    }
 
     if (runningOnGoogleColab == True):
         from google.colab import drive    
@@ -371,28 +369,8 @@ if __name__ ==  '__main__':
         sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/')
 
     else:
-        Data_path = '../../Codes/SensorDeploymentOptimization/'
-        # sys.path.append('../../Codes/SensorDeploymentOptimization/')
+        Data_path = '../SensorDeploymentOptimization/'
         sys.path.append('..')
-    
-    # from ax import optimize, ChoiceParameter
-    from scipy.stats import norm
-    from numpy import argmax
-    import SIM_SIS_Libraries.SensorsClass
-    import SIM_SIS_Libraries.SIM_SIS_Simulator as sim_sis
-    import SIM_SIS_Libraries.ParseFunctions as pf
-    import itertools
-    import numpy as np
-    import pandas as pd
-    import SIM_SIS_Libraries.PreDeploymentEvaluation as pde
-    import copy
-    from datetime import datetime
-    import pytz
-    import ast
-    import os
-    import random
-    import plotly
-    import torch
 
     finalResults = []
     w = CONSTANTS['width'] - 0.5
@@ -404,6 +382,7 @@ if __name__ ==  '__main__':
                                         MaxSensors = CONSTANTS['max_sensors']
                                        )
 
+    global BOV
     BOV =  BOVariables(
                        Data_path, 
                        CONSTANTS['epsilon'], 
@@ -411,7 +390,7 @@ if __name__ ==  '__main__':
                        CONSTANTS['max_sensors'], 
                        CONSTANTS['radius'],
                        CONSTANTS['initial_samples'],
-                       ROS = False
+                       ROS = True
                       )
 
     from openbox import sp
@@ -420,37 +399,24 @@ if __name__ ==  '__main__':
     # Define Search Space
     space = sp.Space()
 
-    list_of_variables = []
-    for i in range(1, CONSTANTS['max_sensors'] + 1):
-        x = sp.Int("x" + str(i), 1, CONSTANTS['width'] - 1, default_value=1)
-        y = sp.Int("y" + str(i), 1, CONSTANTS['height'] - 1, default_value=1)
-        list_of_variables.append(x)
-        list_of_variables.append(y)
     
+    list_of_variables = []
+    for i in range(0, int((CONSTANTS['width'] / CONSTANTS['epsilon']) * CONSTANTS['height'] / CONSTANTS['epsilon'])):
+        x = sp.Int("x" + str(i), 0, 1, default_value = 0)
+        list_of_variables.append(x)
+        
     space.add_variables(list_of_variables)
-
-    from openbox import Optimizer
-
-    history_list = []
-    for index in range(10):
-        opt = Optimizer(
+    
+    opt = Optimizer(
             function_to_be_optimized,
             space,
-            # num_objs=2,
-            max_runs=1000,
-            surrogate_type='prf',
-            # acq_type = 'ehvi',
-            acq_optimizer_type='random_scipy',
-            time_limit_per_trial=31000,
-            task_id='Shadan',
-            # init_strategy='sobol',
-            # ref_point=[100, 15]
+            num_constraints = 1,
+            num_objs = 1,
+            max_runs = CONSTANTS['iterations'],
+            surrogate_type = surrogate_type,
+            acq_optimizer_type = acq_optimizer_type,
+            time_limit_per_trial = 31000,
+            task_id = task_id
         )
-        history = opt.run()
-        
-        import pickle
-
-        with open('openbox_results_single_objective_ROS/history1_' + str(index), 'wb') as handle:
-            pickle.dump(history, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        
-        history_list.append(history)
+    history = opt.run()
+    return history
