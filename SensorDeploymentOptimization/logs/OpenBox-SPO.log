@@ -21880,3 +21880,5 @@
 [INFO] [2021-12-03 11:55:04,545] [OpenBox-SPO] Iteration 393, objective value: [53.73175570551446]. constraints: [-1].
 [INFO] [2021-12-03 12:02:34,563] [OpenBox-SPO] Iteration 394, objective value: [48.35158443617414]. constraints: [-4].
 [INFO] [2021-12-03 12:10:19,450] [OpenBox-SPO] Iteration 395, objective value: [54.862636700698616]. constraints: [-2].
+[INFO] [2021-12-03 12:17:36,000] [OpenBox-SPO] Iteration 396, objective value: [56.57210951720234]. constraints: [-5].
+[INFO] [2021-12-03 12:24:31,780] [OpenBox-SPO] Iteration 397, objective value: [45.798538953033564]. constraints: [-5].
