@@ -3,12 +3,12 @@ import numpy as np
 import pickle
 
 ROS = True
-epsilon = 0.5
+epsilon = 1
 multi_objective = False
-sensorNum = 15
+sensorNum = 13
 maxSensorNum = int(np.min([(8 / epsilon) * (8 / epsilon), sensorNum]))
 
-print('----- Running BO for epsilon: ', epsilon)
+print('----- Running BO for epsilon: ', epsilon, 'and sensor #:', sensorNum)
 
 for i in range(0, 5):
     history = bo.run(iteration = 1000, 
