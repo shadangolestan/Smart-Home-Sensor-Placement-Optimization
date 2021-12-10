@@ -6,7 +6,7 @@ for i in range(1, 5):
     print('----- ', 'Running Genetic Algorithm #', i, ':')
     result, best_configuration_history = ga.run(iteration = 100, 
                                                 population = 10,
-                                                epsilon = 0.25, 
+                                                epsilon = 0.5, 
                                                 initSensorNum = 15, 
                                                 maxSensorNum = 15,  
                                                 radius = 1, 

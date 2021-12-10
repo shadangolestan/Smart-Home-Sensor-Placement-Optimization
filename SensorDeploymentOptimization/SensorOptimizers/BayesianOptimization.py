@@ -35,14 +35,6 @@ class Data:
             
         return steps
 
-    # def SensorPlaceHolderSetup(self):
-    #     Xs = self.frange(0, self.space[0], self.epsilon)
-    #     Ys = self.frange(0, self.space[1], self.epsilon)
-            
-    #     for x in Xs:
-    #       for y in Ys:
-    #         self.placeHolders.append([x, y])
-
     def GetSensorConfiguration(self):
         from collections import Counter
         sensorLocations, sensorTypes = self.GetSensorLocations()
@@ -360,7 +352,8 @@ def run(surrogate_type = 'prf',
         height = 8.0,
         width = 8.0,
         ROS = False,
-        multi_objective = False
+        multi_objective = False,
+        initial_state = 'fixed'
       ):
 
     global multi_objective_flag
@@ -419,10 +412,26 @@ def run(surrogate_type = 'prf',
     if (multi_objective_flag == False):
         list_of_variables = []
         for i in range(1, CONSTANTS['max_sensors'] + 1):
-            x = sp.Int("x" + str(i), 1, (CONSTANTS['width'] - 1) / CONSTANTS['epsilon'], default_value=1)
-            y = sp.Int("y" + str(i), 1, (CONSTANTS['height'] - 1) / CONSTANTS['epsilon'], default_value=1)
-            list_of_variables.append(x)
-            list_of_variables.append(y)
+            if initial_state == 'fixed':
+                x = sp.Int("x" + str(i), 1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon']), default_value=1)
+                y = sp.Int("y" + str(i), 1, int((CONSTANTS['height'] - 1) / CONSTANTS['epsilon']), default_value=1)
+                list_of_variables.append(x)
+                list_of_variables.append(y)
+                
+            elif(initial_state == 'random'):
+                x = sp.Int("x" + str(i), 1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon']), 
+                           default_value=random.randint(1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon'])))
+                
+                y = sp.Int("y" + str(i), 1, int((CONSTANTS['height'] - 1) / CONSTANTS['epsilon']), 
+                           default_value=random.randint(1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon'])))
+                
+                list_of_variables.append(x)
+                list_of_variables.append(y)
+                
+            else:
+                raise NotImplementedError (initial_state + " is not implemented yet! Try using 'fixed' or 'random' values istead")
+
+
 
         space.add_variables(list_of_variables)
 
@@ -447,8 +456,8 @@ def run(surrogate_type = 'prf',
     else:
         list_of_variables = []
         for i in range(1, CONSTANTS['max_sensors'] + 1):
-            x = sp.Int("x" + str(i), 0, (CONSTANTS['width'] - 1) / CONSTANTS['epsilon'], default_value=1)
-            y = sp.Int("y" + str(i), 1, (CONSTANTS['height'] - 1) / CONSTANTS['epsilon'], default_value=1)
+            x = sp.Int("x" + str(i), 0, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon']), default_value=1)
+            y = sp.Int("y" + str(i), 1, int((CONSTANTS['height'] - 1) / CONSTANTS['epsilon']), default_value=1)
             list_of_variables.append(x)
             list_of_variables.append(y)
 
