@@ -5,8 +5,15 @@ def plot_convergence(
             results,
             xlabel="Number of iterations $n$",
             ylabel=r"Max objective value after $n$ iterations",
-            ax=None, name=None, alpha=0.2, yscale=None,
-            color=None, true_minimum=None,
+            ax=None, 
+            name=None, 
+            alpha=0.2, 
+            yscale=None,
+            color=None, 
+            true_minimum=None, 
+            plotDataPoints = True, 
+            ls = '-',
+            marker = '',
             **kwargs):
         """Plot one or several convergence traces.
         Parameters
@@ -36,16 +43,28 @@ def plot_convergence(
         iterations = range(1, n_calls + 1)
         maxs = [np.max(losses[:i]) for i in iterations]
         min_maxs = min(maxs)
-        cliped_losses = np.clip(losses, min_maxs, None)
+        
+        if plotDataPoints:
+            cliped_losses = np.clip(losses, min_maxs, None)
+        else:
+            cliped_losses = None
+        
+
         return plotter(iterations, maxs, cliped_losses, xlabel, ylabel, ax, name, alpha, yscale, color,
-                                true_minimum, **kwargs)
+                                true_minimum, ls, marker, **kwargs)
     
 def plotter(
         x, y1, y2,
         xlabel="Number of iterations $n$",
         ylabel=r"Max objective value after $n$ iterations",
-        ax=None, name=None, alpha=0.2, yscale=None,
-        color=None, true_minimum=None,
+        ax=None, 
+        name=None, 
+        alpha=0.2, 
+        yscale=None,
+        color=None, 
+        true_minimum=None, 
+        ls = '-',
+        marker = '',
         **kwargs):
     """Plot one or several convergence traces.
     Parameters
@@ -72,19 +91,23 @@ def plotter(
     if ax is None:
         ax = plt.gca()
 
-    ax.set_title("Convergence plot")
+    ax.set_title(name)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    ax.grid()
+    # ax.grid()
 
     if yscale is not None:
         ax.set_yscale(yscale)
 
-    ax.plot(x, y1, c=color, label=name, **kwargs)
-    ax.scatter(x, y2, c=color, alpha=alpha)
+    ax.plot(x, y1, c=color, marker = marker, linestyle = ls, **kwargs)
+    
+    try:
+        ax.scatter(x, y2, c=color, alpha=alpha)
+    except:
+        pass
 
     if true_minimum is not None:
-        ax.axhline(true_minimum, linestyle="--",
+        ax.axhline(true_minimum, linestyle="--", marker = marker,
                    color="r", lw=1,
                    label="True minimum")
 

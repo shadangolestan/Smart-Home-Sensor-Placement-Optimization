@@ -5,7 +5,7 @@ def plot_convergence(
                      xlabel="Number of iterations $n$",
                      ylabel=r"Max objective value after $n$ iterations",
                      ax=None, name=None, alpha=0.2, yscale=None,
-                     color=None, true_minimum=None,
+                     color=None, true_minimum=None, plotDataPoints = False, ls = '-',
                      **kwargs
                     ):
         
@@ -15,6 +15,12 @@ def plot_convergence(
     maxs = [np.max(losses[:i]) for i in iterations]
     min_maxs = min(maxs)
     cliped_losses = np.clip(losses, min_maxs, None)
+    
+    if plotDataPoints:
+        cliped_losses = np.clip(losses, min_maxs, None)
+    else:
+        cliped_losses = None
+    
     return plotter(iterations, maxs, cliped_losses, xlabel, ylabel, ax, name, alpha, yscale, color,
                             true_minimum, **kwargs)
     
@@ -23,7 +29,7 @@ def plotter(
             xlabel="Number of iterations $n$",
             ylabel=r"Max objective value after $n$ iterations",
             ax=None, name=None, alpha=0.2, yscale=None,
-            color=None, true_minimum=None,
+            color=None, true_minimum=None, ls = '-',
             **kwargs
            ):
     
@@ -40,8 +46,14 @@ def plotter(
     if yscale is not None:
         ax.set_yscale(yscale)
 
-    ax.plot(x, y1, c=color, label=name, **kwargs)
-    ax.scatter(x, y2, c=color, alpha=alpha)
+    ax.plot(x, y1, c=color, label=name, linestyle = ls, **kwargs)
+    
+    
+    try:
+        ax.scatter(x, y2, c=color, alpha=alpha)
+    except:
+        pass
+    
 
     if true_minimum is not None:
         ax.axhline(true_minimum, linestyle="--",

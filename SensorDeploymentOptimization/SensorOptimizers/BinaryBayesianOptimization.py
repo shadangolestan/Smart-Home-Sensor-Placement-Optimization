@@ -402,7 +402,7 @@ def run(surrogate_type = 'prf',
     
     list_of_variables = []
     for i in range(0, int((CONSTANTS['width'] / CONSTANTS['epsilon']) * CONSTANTS['height'] / CONSTANTS['epsilon'])):
-        x = sp.Int("x" + str(i), 0, 1, default_value = 0)
+        x = sp.Int("x" + str(i), 0, 1, default_value = 1)
         list_of_variables.append(x)
         
     space.add_variables(list_of_variables)
