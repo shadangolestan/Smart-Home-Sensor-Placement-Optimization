@@ -48,27 +48,22 @@ class Chromosome:
             
         return steps
 
-    def SensorPlaceHolderSetup(self):
-        Xs = self.frange(0, self.space[0], self.epsilon)
-        Ys = self.frange(0, self.space[1], self.epsilon)
+    def SensorPlaceHolderSetup(self):   
+        Xs = self.frange(self.epsilon, self.space[0], self.epsilon)
+        Ys = self.frange(self.epsilon, self.space[1], self.epsilon)
         
         import matplotlib.pyplot as plt
         
-
         for x in Xs:
           for y in Ys:
             self.placeHolders.append([x, y])
 
-        # print(self.placeHolders)
-
-        # plt.scatter(np.array(self.placeHolders).transpose()[0], np.array(self.placeHolders).transpose()[1])
-        # plt.show()
-
     def SensorConfigurationSetup(self):
-        Xs = self.frange(0, self.space[0], self.epsilon)
-        Ys = self.frange(0, self.space[1], self.epsilon)
+        
+        Xs = self.frange(self.epsilon, self.space[0], self.epsilon)
+        Ys = self.frange(self.epsilon, self.space[1], self.epsilon)
         self.grid = np.zeros(len(Xs) * len(Ys)).tolist()
-
+ 
         i = 0
         while i < self.initSensorNum:
             cell = random.randrange(len(self.grid))
@@ -255,7 +250,7 @@ class GA:
         for i in space:
           for j in i:
             xs.append(j)
-        A = list(set(xs))
+        A = list(xs)
         A.sort()
         space = [A[-1], A[-2]]
 
