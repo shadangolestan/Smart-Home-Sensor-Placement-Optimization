@@ -42,7 +42,7 @@ class Chromosome:
                 
     def frange(self, start, stop, step):
         steps = []
-        while start <= stop:
+        while start < stop:
             steps.append(start)
             start +=step
             
@@ -266,27 +266,25 @@ class GA:
         return sensor_distribution, types, space, rooms, agentTraces
 
     def calculate_confusion_matrix(self, config, simulateMotionSensors, simulateEstimotes, Plotting, iteration):       
-        for index, chromosome in enumerate(self.chromosomes):
-            if (chromosome.fitness == -1):
-                files = []
+        
+        files = []
+        all_sensors = set([])
 
-                all_sensors = set([])
+        for agentTrace in self.agentTraces:
+            filecoding = ' '#"_" + str(iteration) + "_c" + str(index + 1) + '(' + self.mode + ')'
+            df_ = SIM_SIS_Simulator.RunSimulator(self.space, self.rooms, agentTrace, config, simulateMotionSensors, simulateEstimotes, Plotting , self.Data_path)
+            dataFile, sensors = self.PreProcessor(df_)
+            all_sensors.update(sensors)
+            #self.D = dataFile
+            files.append(dataFile)
 
-                for agentTrace in self.agentTraces:
-                    filecoding = ' '#"_" + str(iteration) + "_c" + str(index + 1) + '(' + self.mode + ')'
-                    df_ = SIM_SIS_Simulator.RunSimulator(self.space, self.rooms, agentTrace, config, simulateMotionSensors, simulateEstimotes, Plotting , self.Data_path)
-                    dataFile, sensors = self.PreProcessor(df_)
-                    all_sensors.update(sensors)
-                    #self.D = dataFile
-                    files.append(dataFile)
-                    
-                import CASAS.al as al
-                import imp
-                imp.reload(al)
-                all_sensors = list(all_sensors)
+        import CASAS.al as al
+        import imp
+        imp.reload(al)
+        all_sensors = list(all_sensors)
 
-                return al.get_confusion_matrix(files, all_sensors)
-                    
+        return al.get_confusion_matrix(files, all_sensors)
+
     
     def RunFitnessFunction(self, simulateMotionSensors, simulateEstimotes, Plotting, iteration):       
         for index, chromosome in enumerate(self.chromosomes):

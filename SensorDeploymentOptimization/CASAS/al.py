@@ -388,7 +388,7 @@ def calculate_confusion_matrix(xtest, ytest):
                 if newlabels[i] == ytest[i]:
                     numright += 1
     else:
-        matrix = confusion_matrix(ytest, newlabels, labels=cf.activitynames, normalize = 'true')
+        matrix = confusion_matrix(ytest, newlabels, labels=cf.activitynames)
     
     return matrix
 
@@ -449,15 +449,15 @@ def get_confusion_matrix(files, sensors):
                     cf.labels = []
                     # cf.data_filename = otherfilename
                     read_data(otherfilename)
-                    
+
                     xtrain = np.append(xtrain, cf.data, axis=0)
                     ytrain = np.append(ytrain, cf.labels)
-            
+
             cf.clf.fit(xtrain, ytrain)
             confusion_matrices.append(calculate_confusion_matrix(xtest, ytest))
-            
+
         except:
-            results.append([0, 0])          
+            confusion_matrices.append(np.zeros((cf.num_activities, cf.num_activities), dtype=int))          
             
         
     return confusion_matrices, cf.activitynames
