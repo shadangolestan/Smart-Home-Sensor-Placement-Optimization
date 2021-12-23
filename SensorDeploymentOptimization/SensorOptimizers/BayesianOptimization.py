@@ -302,6 +302,30 @@ def black_box_function(sample, simulateMotionSensors = True, simulateEstimotes =
     
     except:
         return f1_score
+    
+    
+def calculate_confusion_matrix(sample, simulateMotionSensors = True, simulateEstimotes = False, Plotting = False):       
+    files = []
+    all_sensors = set([])
+
+    for agentTrace in BOV.agentTraces:
+        df_ = sim_sis.RunSimulator(BOV.space, 
+                                   BOV.rooms, 
+                                   agentTrace,
+                                   sample.GetSensorConfiguration(), 
+                                   simulateMotionSensors, 
+                                   simulateEstimotes, 
+                                   Plotting, 
+                                   BOV.Data_path)
+        
+        dataFile, sensors = PreProcessor(df_)
+        all_sensors.update(sensors)
+        files.append(dataFile)
+        
+    all_sensors = list(all_sensors)
+    
+    return al.get_confusion_matrix(files, all_sensors)
+   
 
 def function_to_be_optimized(config):
     sensorPositions = []
@@ -339,6 +363,86 @@ def function_to_be_optimized(config):
     
     else:
         return 100 - black_box_function(data)
+
+
+    
+def confusion_matrix(config):
+    sensorPositions = []
+    sensor_xy = []
+    excluded = []
+
+    for i in range(1, len(config.keys()) + 1):
+        try:
+            sensor_xy.append(config['x' + str(i)] * CONSTANTS['epsilon'])
+            sensor_xy.append(config['y' + str(i)] * CONSTANTS['epsilon'])
+            sensorPositions.append(sensor_xy)
+            sensor_xy = []
+
+        except:
+            pass
+        
+    data = Data(sensorPositions, BOV.space, CONSTANTS['epsilon'])
+    return calculate_confusion_matrix(data)
+ 
+    
+def get_confusion_matrix(config, 
+                         run_on_colab = False,
+                         epsilon = 1,
+                         radius = 1,
+                         print_epochs = True,
+                         height = 8.0,
+                         width = 8.0,
+                         ROS = False,
+                         multi_objective = False):
+    
+    global multi_objective_flag
+    global CONSTANTS
+    global runningOnGoogleColab
+    runningOnGoogleColab = run_on_colab
+    multi_objective_flag = multi_objective
+    CONSTANTS = {
+        'iterations': 1000,
+        'initial_samples': 10,
+        'epsilon': epsilon,
+        'radius': radius,
+        'height': height,
+        'width': width,
+        'max_sensors': 15
+    }
+
+    if (runningOnGoogleColab == True):
+        from google.colab import drive    
+        drive.mount('/content/gdrive', force_remount=True)
+        Data_path = 'gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/'
+        sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/')
+
+    else:
+        Data_path = '../SensorDeploymentOptimization/'
+        sys.path.append('..')
+
+    finalResults = []
+    w = CONSTANTS['width'] - 0.5
+    h = CONSTANTS['height'] - 0.5
+
+    dataBoundaries = MakeDataBoundaries(
+                                        height = CONSTANTS['height'], 
+                                        width = CONSTANTS['width'], 
+                                        MaxSensors = 15
+                                       )
+
+    global BOV
+    BOV =  BOVariables(
+                       Data_path, 
+                       CONSTANTS['epsilon'], 
+                       15, 
+                       15, 
+                       CONSTANTS['radius'],
+                       CONSTANTS['initial_samples'],
+                       ROS = True
+                      )
+    
+    return confusion_matrix(config)
+    
 
 def run(surrogate_type = 'prf',
         acq_optimizer_type = 'random_scipy',

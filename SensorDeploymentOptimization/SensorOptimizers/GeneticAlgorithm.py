@@ -265,20 +265,33 @@ class GA:
               
         return sensor_distribution, types, space, rooms, agentTraces
 
-    def RunFitnessFunction(self, simulateMotionSensors, simulateEstimotes, Plotting, iteration):       
+    def calculate_confusion_matrix(self, config, simulateMotionSensors, simulateEstimotes, Plotting, iteration):       
         for index, chromosome in enumerate(self.chromosomes):
             if (chromosome.fitness == -1):
                 files = []
 
-                # import sys
-                # if (runningOnGoogleColab == True):
-                #     sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/')
-                #     Data_path = 'gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/'
+                all_sensors = set([])
+
+                for agentTrace in self.agentTraces:
+                    filecoding = ' '#"_" + str(iteration) + "_c" + str(index + 1) + '(' + self.mode + ')'
+                    df_ = SIM_SIS_Simulator.RunSimulator(self.space, self.rooms, agentTrace, config, simulateMotionSensors, simulateEstimotes, Plotting , self.Data_path)
+                    dataFile, sensors = self.PreProcessor(df_)
+                    all_sensors.update(sensors)
+                    #self.D = dataFile
+                    files.append(dataFile)
                     
-                # else:
-                #     # sys.path.append('../../Codes/SensorDeploymentOptimization/')
-                #     sys.path.append('..')
-                #     Data_path = '../SensorDeploymentOptimization/'
+                import CASAS.al as al
+                import imp
+                imp.reload(al)
+                all_sensors = list(all_sensors)
+
+                return al.get_confusion_matrix(files, all_sensors)
+                    
+    
+    def RunFitnessFunction(self, simulateMotionSensors, simulateEstimotes, Plotting, iteration):       
+        for index, chromosome in enumerate(self.chromosomes):
+            if (chromosome.fitness == -1):
+                files = []
 
                 all_sensors = set([])
 
@@ -290,19 +303,11 @@ class GA:
                     #self.D = dataFile
                     files.append(dataFile)
                     
-                
-
-                # if (runningOnGoogleColab == True):
-                #     sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/CASAS/AL-Smarthome')
-
-                # else:
-                #     sys.path.append('../CASAS/AL-Smarthome')
 
                 import CASAS.al as al
                 import imp
                 imp.reload(al)
                 all_sensors = list(all_sensors)
-                # chromosome.fitness = ((al.leave_one_out(files, sensors)[0]) - (np.sum(chromosome.grid) / len(chromosome.placeHolders))) * 100
 
                 chromosome.fitness = (al.leave_one_out(files, all_sensors)[0] - (sum(chromosome.grid) / 100)) * 100 # - (len(chromosome.placeHolders)**(np.sum(chromosome.grid)/len(chromosome.placeHolders))) / len(chromosome.placeHolders)) * 100
                 if chromosome.fitness < 0:
@@ -579,7 +584,58 @@ def ModelsInitializations(Data_path, ROS):
 
     return sensor_distribution, types, space, rooms, agentTraces
 '''    
+
+def get_confusion_matrix(config,
+                         run_on_google_colab = False, 
+                         iteration = 100, 
+                         population = 10,
+                         epsilon = 1, # The distance between two nodes in the space grid:
+                         initSensorNum = 14, # initial sensor numbers
+                         maxSensorNum = 25,  # max sensor numbers
+                         radius = 1, # radius of the motion sensors
+                         mutation_rate = 0.005, # Mutation rate for each item in a chromosome's data (each sensor placeholder)
+                         crossover = 2, # number of folds in the crossover process
+                         survival_rate = 0.1,
+                         reproduction_rate = 0.2,
+                         print_epochs = True,
+                         ROS = False
+                        ):
+       
+        global runningOnGoogleColab
+        runningOnGoogleColab = run_on_google_colab
     
+
+        import sys
+
+        if (runningOnGoogleColab == True):
+            from google.colab import drive    
+            drive.mount('/content/gdrive', force_remount=True)
+            Data_path = 'gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/'
+            sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/')
+
+        else:
+            Data_path = '../SensorDeploymentOptimization/'
+            # sys.path.append('../../Codes/SensorDeploymentOptimization/')
+            sys.path.append('..')
+           
+        ga = GA(population, 
+                'expert', 
+                Data_path, 
+                epsilon, 
+                initSensorNum, 
+                maxSensorNum, 
+                radius, 
+                mutation_rate, 
+                crossover, 
+                survival_rate, 
+                reproduction_rate,
+                ROS)
+        
+
+        return ga.calculate_confusion_matrix(config.GetSensorConfiguration(), True, False, False, 1)
+
+
+
 def run(run_on_google_colab = False, 
         iteration = 100, 
         population = 10,

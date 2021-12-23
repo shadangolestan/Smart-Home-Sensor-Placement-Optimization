@@ -371,6 +371,27 @@ def save_params():
         joblib.dump(cf.clf, f)  # save model to file
 
 
+def calculate_confusion_matrix(xtest, ytest):
+    """ Collect and report predictive accuracy of trained model.
+    """
+    numright = total = 0
+    newlabels = cf.clf.predict(xtest)
+    
+    # print(cf.num_activities)
+    
+    if cf.filter_other:  # do not count other in total
+        matrix = np.zeros((cf.num_activities, cf.num_activities), dtype=int)
+        for i in range(len(ytest)):
+            if ytest[i] != -1:
+                matrix[ytest[i]][newlabels[i]] += 1
+                total += 1
+                if newlabels[i] == ytest[i]:
+                    numright += 1
+    else:
+        matrix = confusion_matrix(ytest, newlabels, labels=cf.activitynames, normalize = 'true')
+    
+    return matrix
+
 def report_results(xtest, ytest):
     """ Collect and report predictive accuracy of trained model.
     """
@@ -398,15 +419,48 @@ def report_results(xtest, ytest):
                 elif newlabels[i] == ytest[i]:
                     numright += 1
             total = len(ytest)
-    # SHADAN:
-    # average = 'weighted': This accounts data imbalance, which means that it favors simple SOM_GA algorithm
-    # average = 'macro' : This does not account data imbalance, which means that it favors GA algorithm
-
-    accuracy = float(numright) / float(total)
     
-    # return accuracy
-    # return accuracy_score(ytest, newlabels)
+    accuracy = float(numright) / float(total)
+
     return f1_score(ytest, newlabels, average = 'macro') #macro is the alternative
+
+
+def get_confusion_matrix(files, sensors):
+    """ Perform leave-one-subject-out testing. Assume each subject is represented
+    by a specified file.
+    """
+    #cf = config.Config()
+    cf.set_parameters(sensors)
+    cf.num_features = cf.num_set_features + (2 * cf.num_sensors)
+    
+    confusion_matrices = []
+        
+    for index1, datafilename in enumerate(files):
+        try:
+            read_data(datafilename)
+            xtest = cf.data
+            ytest = cf.labels
+            k = len(cf.data[0])
+            xtrain = np.empty((0, k), dtype=float)
+            ytrain = np.empty((0), dtype=int)
+            for index2, otherfilename in enumerate(files):
+                if index1 != index2:
+                    cf.data = []
+                    cf.labels = []
+                    # cf.data_filename = otherfilename
+                    read_data(otherfilename)
+                    
+                    xtrain = np.append(xtrain, cf.data, axis=0)
+                    ytrain = np.append(ytrain, cf.labels)
+            
+            cf.clf.fit(xtrain, ytrain)
+            confusion_matrices.append(calculate_confusion_matrix(xtest, ytest))
+            
+        except:
+            results.append([0, 0])          
+            
+        
+    return confusion_matrices, cf.activitynames
 
 
 def leave_one_out(files, sensors):
@@ -418,7 +472,7 @@ def leave_one_out(files, sensors):
     cf.num_features = cf.num_set_features + (2 * cf.num_sensors)
     
     results = []
-    
+    confusion_matrices = []
         
     for index1, datafilename in enumerate(files):
         try:
@@ -440,7 +494,7 @@ def leave_one_out(files, sensors):
             
             cf.clf.fit(xtrain, ytrain)
             results.append(report_results(xtest, ytest))
-
+            
         except:
             results.append([0, 0])          
             

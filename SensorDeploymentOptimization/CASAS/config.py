@@ -34,6 +34,7 @@ class Config:
     def __init__(self):
         """ Constructor
         """
+        '''
         self.activitynames = ['Prepare', 'Start Session', 'Exercise', 'Toilet', 'Sit', 'Bath',
                                'wash', 'Fill Kettle', 'Boil Water', 'find ingredients',
                                'Make tea/coffee', 'find frying pan', 'find eggs', 'Cook eggs',
@@ -43,6 +44,11 @@ class Config:
                                'Broom Kitchen', 'Broom Diningroom', 'Empty dustpan',
                                'Return broom', 'Laundry', 'Grab Iron', 'Iron', 'Return Iron',
                                'Pick Up Tablet', 'Work with Tablet', 'Watch TV']
+                               
+        '''
+        
+        self.activitynames = []
+        
         #['Phone', 'Wash_hands', 'Cook', 'Eat', 'Clean']
         self.current_seconds_of_day = 0
         self.current_timestamp = 0
