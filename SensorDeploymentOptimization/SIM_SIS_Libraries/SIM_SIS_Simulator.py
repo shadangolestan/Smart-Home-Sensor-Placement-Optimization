@@ -124,8 +124,6 @@ def InitializeDataset(sensorTypes, FDN):
 
 #DONE
 def VectorizeSensorReadings(fs, time):
-    # if len(fs) == 0:
-        # print('here we go')
         
     sensor_bins = [0] * sensorsTypes[0][1]
     
@@ -220,36 +218,48 @@ def FindAgentsRoom(x, y, rooms):
 def SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, t, i, agent1Loc, action, agent2Loc = None):
     myfs = []
     for sensor in sensors_list:
-        
         if (simulateEstimotes == False and sensor.sensor_type == "beacon_sensor"): continue
         if (simulateMotionSensors == False and sensor.sensor_type == "motion_sensor"): continue
     
         if (simulateMotionSensors):
             if (plotflag and sensor.sensor_type == "motion_sensor"):
                 pp = ax.plot(float(sensor.x) / 100, float(sensor.y) / 100 , marker='.', color='k', lw=5)
+                
+            circ = Circle((float(float(sensor.x) / 100), float(float(sensor.y) / 100)), float(float(sensor.sensing_area) / 100))
+                
+            if (circ.contains_point([agent1Loc[0], agent1Loc[1]]) and 
+            (RecContains(agent1Loc[0], agent1Loc[1], sensor.room)):
+            
+                no_event_flag = 0
+                event = ec.Event()
+                event.sensor = sensor.sensor_id #SensorId that created the event
+                event.data = "TRUE"  #data
+                event.hash = "|hash|" #hash
+                event.source = "xmlFile" #where is coming from
+                event.timestamp = t
+                event.sensorType = sensor.sensor_type #type of sensor
+
+                if (float(FiringProbability(sensor, agent1Loc)) > random.uniform(0, 1)):
+                    myfs.append(sensor)
+
+                if (0.1 > random.uniform(0, 1)):
+                    myfs.append(sensor)
 
         if (simulateEstimotes):
             if (plotflag and sensor.sensor_type == "beacon_sensor"):
                 pp = ax.plot(float(sensor.x) / 100, float(sensor.y) / 100 , marker= '2' , color='k', lw=5)                
 
-        circ = Circle((float(float(sensor.x) / 100), float(float(sensor.y) / 100)), float(float(sensor.sensing_area) / 100))
-
-        if (circ.contains_point([agent1Loc[0], agent1Loc[1]]) and (RecContains(agent1Loc[0], agent1Loc[1], sensor.room) or sensor.sensor_type == "beacon_sensor")):
             no_event_flag = 0
             event = ec.Event()
-            event.sensor = sensor.sensor_id #SensorId that created the event
-            event.data = "TRUE"  #data
+            event.sensor = sensor.sensor_id
+            event.data = sensor.rssiToMeters()
             event.hash = "|hash|" #hash
             event.source = "xmlFile" #where is coming from
             event.timestamp = t
             event.sensorType = sensor.sensor_type #type of sensor
-            
-            if (float(FiringProbability(sensor, agent1Loc)) > random.uniform(0, 1)):
-                myfs.append(sensor)
-                
-            if (0.1 > random.uniform(0, 1)):
-                myfs.append(sensor)
 
+            myfs.append(sensor)
+        
     no_event_flag = 0
 
     VectorizeSensorReadings(myfs, i) 
@@ -298,13 +308,9 @@ def RunSimulation(FDN, simulateMotionSensors, simulateEstimotes):
     global df_
     for i in range(1, len(df_)):       
         no_event_flag = 1
-        # print('agent loc calculation')
         xtrace = float(df_.x[i])
         ytrace = float(df_.y[i])
         action = df_.activity[i]
-        
-        # if (xtrace < 0): xtrace = abs(xtrace)
-        # if (ytrace < 0): ytrace = abs(ytrace)
          
         agent1Loc = [xtrace, ytrace] 
         agent1Loc_previous = [0, 0]
