@@ -124,7 +124,7 @@ def InitializeDataset(sensorTypes, FDN):
 
 #DONE
 def VectorizeSensorReadings(fs, time):
-        
+    
     sensor_bins = [0] * sensorsTypes[0][1]
     
     try:
@@ -147,7 +147,7 @@ def VectorizeSensorReadings(fs, time):
                 sensor_bins[int(sensor.sensor_id)] = 1
 
             elif (sensor.sensor_type == 'beacon_sensor'):
-                estimote_bins[int(sensor.sensor_id)] = 1
+                estimote_bins[int(sensor.sensor_id)] = sensor.rssiToMeters()
                 
         simulated_sensor_readings[time] = list(map(sum, zip(simulated_sensor_readings[time], sensor_bins))) 
         
@@ -329,6 +329,8 @@ def CreateUltimateDataset(UDN, epoch):
         
     except:
         pass
+                
+    print(df_)
       
     # TODO:    
     # df_.to_csv(UDN + ".csv", sep=',', index=False)
