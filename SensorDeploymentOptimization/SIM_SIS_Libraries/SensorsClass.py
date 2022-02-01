@@ -47,3 +47,7 @@ class BeaconSensor(Sensor):
         dist = 10 ** u
         
         return dist 
+    
+    def MetersToRSSI(self, dist):
+        import math 
+        return self.measuredPower - 10*self.N*math.log(dist, 10)

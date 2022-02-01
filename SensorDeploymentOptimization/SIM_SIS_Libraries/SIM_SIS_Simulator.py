@@ -40,7 +40,7 @@ def AgentNum(a):
     agentsnum = a
 
 #DONE
-def Initialization(sensorsConfiguration):
+def Initialization(sensorsConfiguration, simulateMotionSensors, simulateEstimotes):
     global groundtruth
     global motion_readings
     global sensorsTypes
@@ -91,7 +91,7 @@ def Initialization(sensorsConfiguration):
     sr_matrix = np.zeros([1, 14])
 
 #DONE
-def InitializeDataset(sensorTypes, FDN):
+def InitializeDataset(sensorTypes, FDN, simulateMotionSensors, simulateEstimotes):
     global simulated_sensor_readings
     global simulated_estimote_readings
     global df_
@@ -109,53 +109,77 @@ def InitializeDataset(sensorTypes, FDN):
     df_.y = tempdf.y
     df_.activity = tempdf.Action
     
-    try:
-        sensor_bins = [0] * sensorTypes[0][1]
-        simulated_sensor_readings = [sensor_bins] * len(df_)
-    except:
-        pass
-    
-    try:
-        estimote_bins = [0] * sensorTypes[1][1]
-        simulated_estimote_readings = [estimote_bins] * len(df_)
-    except:
-        pass
-    
-
-#DONE
-def VectorizeSensorReadings(fs, time):
-    
-    sensor_bins = [0] * sensorsTypes[0][1]
-    
-    try:
-        estimote_bins = [0] * sensorsTypes[1][1]
-    except:
-        pass
-    
-    if len(fs) == 0:
-        simulated_sensor_readings[time] = list(map(sum, zip(simulated_sensor_readings[time], sensor_bins))) 
-        
+    if (simulateMotionSensors):
         try:
-            simulated_estimote_readings[time] = list(map(sum, zip(simulated_estimote_readings[time], estimote_bins))) 
+            motionNumbers = sensorsTypes[[a[0] for a in sensorsTypes].index('motion sensors')][1]
         except:
-            pass
+            motionNumbers = 0
+
+        sensor_bins = [0] * motionNumbers        
+        simulated_sensor_readings = [sensor_bins] * len(df_)
+    
+    if (simulateEstimotes):
+        try:
+            beaconNumbers = sensorsTypes[[a[0] for a in sensorsTypes].index('beacon sensors')][1]
+        except:
+            beaconNumbers = 0
+            
+        estimote_bins = [0] * beaconNumbers
+        simulated_estimote_readings = [estimote_bins] * len(df_)
+    
+#DONE
+def VectorizeSensorReadings(fs, time, agent1Loc, simulateMotionSensors, simulateEstimotes):
+    if (simulateMotionSensors):
+        try:
+            motionNumbers = sensorsTypes[[a[0] for a in sensorsTypes].index('motion sensors')][1]
+        except:
+            motionNumbers = 0
+            
+        sensor_bins = [0] * motionNumbers
+    
+    if (simulateEstimotes):
+        try:
+            beaconNumbers = sensorsTypes[[a[0] for a in sensorsTypes].index('beacon sensors')][1]
+        except:
+            beaconNumbers = 0
+            
+        estimote_bins = [0] * beaconNumbers
+        
+    if len(fs) == 0:
+        if (simulateMotionSensors):
+            if (len(sensor_bins) > 0):
+                simulated_sensor_readings[time] = list(map(sum, zip(simulated_sensor_readings[time], sensor_bins))) 
+            else:
+                simulated_sensor_readings[time] = []
+        
+        if (simulateEstimotes):
+            if (len(estimote_bins) > 0):
+                simulated_estimote_readings[time] = list(map(sum, zip(simulated_estimote_readings[time], estimote_bins))) 
+            else:
+                simulated_estimote_readings[time] = []
         
     else:
         for sensor in fs:
             if (sensor.sensor_type == 'motion_sensor'):
-                # snum = int(sensor.sensor_id.replace('sensor',''))
-                sensor_bins[int(sensor.sensor_id)] = 1
+                if (simulateMotionSensors and motionNumbers != 0):
+                    sensor_bins[int(sensor.sensor_id)] = 1
 
             elif (sensor.sensor_type == 'beacon_sensor'):
-                estimote_bins[int(sensor.sensor_id)] = sensor.rssiToMeters()
-                
-        simulated_sensor_readings[time] = list(map(sum, zip(simulated_sensor_readings[time], sensor_bins))) 
+                if (simulateEstimotes and beaconNumbers != 0):
+                    from math import dist
+                    estimote_bins[int(sensor.sensor_id)] = sensor.MetersToRSSI(dist((sensor.x, sensor.y), (agent1Loc[0], agent1Loc[1])))
+                    
+        if (simulateMotionSensors):
+            if (len(sensor_bins) > 0):
+                simulated_sensor_readings[time] = list(map(sum, zip(simulated_sensor_readings[time], sensor_bins))) 
+            else:
+                simulated_sensor_readings[time] = []
         
-        try:
-            simulated_estimote_readings[time] = list(map(sum, zip(simulated_estimote_readings[time], estimote_bins))) 
-        except:
-            pass
-            
+        if (simulateEstimotes):
+            if (len(estimote_bins) > 0):
+                simulated_estimote_readings[time] = list(map(sum, zip(simulated_estimote_readings[time], estimote_bins)))
+            else:
+                simulated_estimote_readings[time] = []
             
 def AddRandomnessToDatasets(epsilon, data_path, rooms):
     import pandas as pd
@@ -209,9 +233,6 @@ def FindAgentsRoom(x, y, rooms):
         if (x >= rooms[room][0][0] and x <= rooms[room][1][0] and
             y >= rooms[room][0][1] and y <= rooms[room][1][1]):
             return rooms[room], room
-
-    print('Bad point is:', end = ' ')
-    print(x,'  :  ', y)
         
     return None
     
@@ -221,14 +242,14 @@ def SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, t, i, agent
         if (simulateEstimotes == False and sensor.sensor_type == "beacon_sensor"): continue
         if (simulateMotionSensors == False and sensor.sensor_type == "motion_sensor"): continue
     
-        if (simulateMotionSensors):
-            if (plotflag and sensor.sensor_type == "motion_sensor"):
+        if (simulateMotionSensors and sensor.sensor_type == "motion_sensor"):
+            if (plotflag):
                 pp = ax.plot(float(sensor.x) / 100, float(sensor.y) / 100 , marker='.', color='k', lw=5)
                 
             circ = Circle((float(float(sensor.x) / 100), float(float(sensor.y) / 100)), float(float(sensor.sensing_area) / 100))
                 
             if (circ.contains_point([agent1Loc[0], agent1Loc[1]]) and 
-            (RecContains(agent1Loc[0], agent1Loc[1], sensor.room)):
+                (RecContains(agent1Loc[0], agent1Loc[1], sensor.room))):
             
                 no_event_flag = 0
                 event = ec.Event()
@@ -245,14 +266,16 @@ def SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, t, i, agent
                 if (0.1 > random.uniform(0, 1)):
                     myfs.append(sensor)
 
-        if (simulateEstimotes):
-            if (plotflag and sensor.sensor_type == "beacon_sensor"):
+        if (simulateEstimotes and sensor.sensor_type == "beacon_sensor"):
+            if (plotflag):
                 pp = ax.plot(float(sensor.x) / 100, float(sensor.y) / 100 , marker= '2' , color='k', lw=5)                
 
+                
+            from math import dist
             no_event_flag = 0
             event = ec.Event()
             event.sensor = sensor.sensor_id
-            event.data = sensor.rssiToMeters()
+            event.data = sensor.MetersToRSSI(dist((sensor.x, sensor.y), (agent1Loc[0], agent1Loc[1])))
             event.hash = "|hash|" #hash
             event.source = "xmlFile" #where is coming from
             event.timestamp = t
@@ -262,8 +285,8 @@ def SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, t, i, agent
         
     no_event_flag = 0
 
-    VectorizeSensorReadings(myfs, i) 
-    
+    VectorizeSensorReadings(myfs, i, agent1Loc, simulateMotionSensors, simulateEstimotes) 
+
     if (plotflag):
         # fig, ax = plt.subplots(figsize=(8.5, 8.5), dpi=80)
         from IPython import display
@@ -283,8 +306,6 @@ def SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, t, i, agent
         display.clear_output(wait=True)
         display.display(pl.gcf())
         
-
-    
 
 def FiringProbability(sensor, agentLocation):
     import math
@@ -306,7 +327,7 @@ def FiringProbability(sensor, agentLocation):
     
 def RunSimulation(FDN, simulateMotionSensors, simulateEstimotes):     
     global df_
-    for i in range(1, len(df_)):       
+    for i in range(1, len(df_)):      
         no_event_flag = 1
         xtrace = float(df_.x[i])
         ytrace = float(df_.y[i])
@@ -330,7 +351,7 @@ def CreateUltimateDataset(UDN, epoch):
     except:
         pass
                 
-    print(df_)
+    # print(df_)
       
     # TODO:    
     # df_.to_csv(UDN + ".csv", sep=',', index=False)
@@ -374,21 +395,18 @@ def RunSimulator(space, Rooms, agentTrace, sensorsConfiguration, simulateMotionS
     simulateEstimotes = simulateEstimotesflag
     SwitchPlotFlag(plottingflag)
     
-    Initialization(sc)
-    InitializeDataset(sc[0], FDN)
-    for epoch in range(Epoch):
-        Initialization(sc)
+    Initialization(sc, simulateMotionSensors, simulateEstimotes)
+    InitializeDataset(sc[0], FDN, simulateMotionSensors, simulateEstimotes)
+    
+    for epoch in range(Epoch):    
+        Initialization(sc, simulateMotionSensors, simulateEstimotes)
         sensors_list = MakeSensorsList(sc[1], radius)
-        if (plotflag):
-            # %matplotlib notebook
-            fig, ax = plt.subplots(figsize = (8.5, 8.5))
-            # img = plt.imread("Data//sc.png")        
-
-        # print('RunSimulation')
-        RunSimulation(FDN, simulateMotionSensors, simulateEstimotes)
-        # print('RunSimulation done')
         
-    # print('creating ultimate dataset')
+        if (plotflag):
+            fig, ax = plt.subplots(figsize = (8.5, 8.5))
+
+        RunSimulation(FDN, simulateMotionSensors, simulateEstimotes)
+        
     CreateUltimateDataset(UDN, Epoch)
     
     
