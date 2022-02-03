@@ -50,4 +50,9 @@ class BeaconSensor(Sensor):
     
     def MetersToRSSI(self, dist):
         import math 
-        return self.measuredPower - 10*self.N*math.log(dist, 10)
+        import numpy as np
+        
+        rawValue = self.measuredPower - 10*self.N*math.log(dist, 10)
+        noise = np.random.normal(0, dist, 1)
+        
+        return rawValue + noise

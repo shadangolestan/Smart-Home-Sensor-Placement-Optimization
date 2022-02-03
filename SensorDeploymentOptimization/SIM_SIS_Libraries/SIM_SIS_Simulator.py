@@ -248,9 +248,7 @@ def SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, t, i, agent
                 
             circ = Circle((float(float(sensor.x) / 100), float(float(sensor.y) / 100)), float(float(sensor.sensing_area) / 100))
                 
-            if (circ.contains_point([agent1Loc[0], agent1Loc[1]]) and 
-                (RecContains(agent1Loc[0], agent1Loc[1], sensor.room))):
-            
+            if (circ.contains_point([agent1Loc[0], agent1Loc[1]]) and (RecContains(agent1Loc[0], agent1Loc[1], sensor.room))):
                 no_event_flag = 0
                 event = ec.Event()
                 event.sensor = sensor.sensor_id #SensorId that created the event
@@ -270,19 +268,19 @@ def SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, t, i, agent
             if (plotflag):
                 pp = ax.plot(float(sensor.x) / 100, float(sensor.y) / 100 , marker= '2' , color='k', lw=5)                
 
-                
-            from math import dist
-            no_event_flag = 0
-            event = ec.Event()
-            event.sensor = sensor.sensor_id
-            event.data = sensor.MetersToRSSI(dist((sensor.x, sensor.y), (agent1Loc[0], agent1Loc[1])))
-            event.hash = "|hash|" #hash
-            event.source = "xmlFile" #where is coming from
-            event.timestamp = t
-            event.sensorType = sensor.sensor_type #type of sensor
+            if (RecContains(agent1Loc[0], agent1Loc[1], sensor.room)):
+                from math import dist
+                no_event_flag = 0
+                event = ec.Event()
+                event.sensor = sensor.sensor_id
+                event.data = sensor.MetersToRSSI(dist((sensor.x, sensor.y), (agent1Loc[0], agent1Loc[1])))
+                event.hash = "|hash|" #hash
+                event.source = "xmlFile" #where is coming from
+                event.timestamp = t
+                event.sensorType = sensor.sensor_type #type of sensor
 
-            myfs.append(sensor)
-        
+                myfs.append(sensor)
+
     no_event_flag = 0
 
     VectorizeSensorReadings(myfs, i, agent1Loc, simulateMotionSensors, simulateEstimotes) 
