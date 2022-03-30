@@ -17,6 +17,7 @@ import plotly
 from openbox import Optimizer
 import CASAS.al as al
 import pickle
+from openbox import sp
 
 class Data:
     def __init__(self, sensorPositions, sensorTypes, space, epsilon):
@@ -26,6 +27,9 @@ class Data:
         self.epsilon = epsilon
         self.space = space
         # self.SensorPlaceHolderSetup()
+        self.sensitivity = {'3': 'pressure',
+                            '4': 'accelerometer',
+                            '5': 'electricity'}
         
     def frange(self, start, stop, step):
         steps = []
@@ -38,9 +42,7 @@ class Data:
     def GetSensorConfiguration(self):
         from collections import Counter
         sensorLocations = self.GetSensorLocations()
-        
         _, rooms = pf.ParseWorld(simworldname = '')
-        
         summaryDict = Counter(self.sensorTypes)
 
         # TODO: DIFFERENT SENSOR TYPE DEFINITIONS SHOULD BE ADDED HERE:
@@ -51,6 +53,9 @@ class Data:
 
             elif (key == 2):
                 configurationSummary.append(['beacon sensors', summaryDict[key]])
+                
+            elif (key == 3):
+                configurationSummary.append(['IS', summaryDict[key]])
 
                 
         
@@ -67,6 +72,15 @@ class Data:
 
             elif (self.sensorTypes[index] == 2):
                 configurationDetails.append(tuple([loc, room, 'beacon sensors']))
+                
+            elif (self.sensorTypes[index] == 3):
+                configurationDetails.append(tuple([loc, room, 'IS', self.sensitivity['3']]))
+                
+            elif (self.sensorTypes[index] == 4):
+                configurationDetails.append(tuple([loc, room, 'IS', self.sensitivity['4']]))
+                
+            elif (self.sensorTypes[index] == 5):
+                configurationDetails.append(tuple([loc, room, 'IS', self.sensitivity['5']]))
 
             else:
                 configurationDetails.append(tuple([loc, room, 'motion sensors']))
@@ -83,11 +97,12 @@ class Data:
 
 
 class BOVariables:
-    def __init__(self, Data_path, epsilon, initSensorNum, maxSensorNum, radius, sampleSize, ROS):
+    def __init__(self, Data_path, epsilon, initSensorNum, maxLSSensorNum, maxISSensorNum, radius, sampleSize, ROS):
         self.epsilon = epsilon
         self.Data_path = Data_path
         self.initSensorNum = initSensorNum
-        self.maxSensorNum = maxSensorNum
+        self.maxLSSensorNum = maxLSSensorNum
+        self.maxISSensorNum = maxISSensorNum
         self.radius = radius
         self.sensor_distribution, self.types, self.space, self.rooms, self.agentTraces = self.ModelsInitializations(ROS)
 
@@ -263,18 +278,18 @@ def convertTime(posix_timestamp):
     time = dt.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
     return time
 
-def MakeDataBoundaries(height = 10.5, width = 6.6, MaxSensors = 15):
+def MakeDataBoundaries(height = 10.5, width = 6.6, MaxLSSensors = 15):
     from collections import defaultdict, OrderedDict
 
     d = dict()
 
-    for idx in range(MaxSensors):
+    for idx in range(MaxLSSensors):
             d['x' + str(idx)] = (0.5, width - 0.5)
             d['y' + str(idx)] = (0.5, height - 0.5)
 
     return d
 
-def black_box_function(sample, simulateMotionSensors = True, simulateEstimotes = False, Plotting = False):       
+def black_box_function(sample, simulateMotionSensors = True, simulateEstimotes = False, simulateIS = False, Plotting = False):       
     files = []
     all_sensors = set([])
     
@@ -286,7 +301,8 @@ def black_box_function(sample, simulateMotionSensors = True, simulateEstimotes =
                                    agentTrace,
                                    sample.GetSensorConfiguration(), 
                                    simulateMotionSensors, 
-                                   simulateEstimotes, 
+                                   simulateEstimotes,
+                                   simulateIS,
                                    Plotting, 
                                    BOV.Data_path)
         
@@ -341,22 +357,226 @@ def function_to_be_optimized(config):
     
     excluded = []
 
-    for i in range(1, CONSTANTS['max_sensors'] + 1):
+    for i in range(1, CONSTANTS['max_LS_sensors'] + 1):
         sensor_xy.append(config['x' + str(i)] * CONSTANTS['epsilon'])
         sensor_xy.append(config['y' + str(i)] * CONSTANTS['epsilon'])
         sensorTypes.append(config['t' + str(i)])
         sensorPositions.append(sensor_xy)
         sensor_xy = []
+
         
-        # sensorTypes.append(1)
-        
-    print(sensorTypes)
+    for i in range(1, CONSTANTS['max_IS_sensors'] + 1):
+        object_location = config['object_location' + str(i)].split(',')
+        sensor_xy.append(float(object_location[0]))
+        sensor_xy.append(float(object_location[1]))
+        sensorTypes.append(config['t_o' + str(i)])
+        sensorPositions.append(sensor_xy)
+        sensor_xy = []
+
     data = Data(sensorPositions, sensorTypes, BOV.space, CONSTANTS['epsilon'])
 
     return 100 - black_box_function(data, 
                                     simulateMotionSensors = sensor_types['model_motion_sensor'],
-                                    simulateEstimotes = sensor_types['model_beacon_sensor']
+                                    simulateEstimotes = sensor_types['model_beacon_sensor'],
+                                    simulateIS = (sensor_types['model_pressure_sensor'] and
+                                                  sensor_types['model_accelerometer'] and
+                                                  sensor_types['model_electricity_sensor'])
                                    )
+
+def BuildConfigurationSearchSpace(initial_state):
+    list_of_variables = []
+    for i in range(1, CONSTANTS['max_LS_sensors'] + 1):
+        if initial_state == 'fixed':
+            x = sp.Int("x" + str(i), 1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon']), default_value=1)
+            y = sp.Int("y" + str(i), 1, int((CONSTANTS['height'] - 1) / CONSTANTS['epsilon']), default_value=1)
+
+            if LSsensorTypesNum > 1:
+                t = sp.Int("t" + str(i), 1, LSsensorTypesNum, default_value=random.randint(1, LSsensorTypesNum))
+
+            else:
+                t = sp.Constant("t" + str(i), 1)
+
+        elif(initial_state == 'random'):
+            x = sp.Int("x" + str(i), 1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon']), 
+                       default_value=random.randint(1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon'])))
+
+            y = sp.Int("y" + str(i), 1, int((CONSTANTS['height'] - 1) / CONSTANTS['epsilon']), 
+                       default_value=random.randint(1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon'])))
+
+            if LSsensorTypesNum > 1:
+                t = sp.Int("t" + str(i), 1, LSsensorTypesNum, default_value=random.randint(1, LSsensorTypesNum))
+
+            else:
+                t = sp.Constant("t" + str(i), 1)
+
+        else:
+            raise NotImplementedError (initial_state + " is not implemented yet! Try using 'fixed' or 'random' values istead")
+                
+        list_of_variables.append(x)
+        list_of_variables.append(y)
+        list_of_variables.append(t)
+    
+    for i in range(1, CONSTANTS['max_IS_sensors'] + 1):
+        if initial_state == 'fixed':
+            x_o = sp.Int("x_o" + str(i), 1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon']), default_value=1)
+            y_o = sp.Int("y_o" + str(i), 1, int((CONSTANTS['height'] - 1) / CONSTANTS['epsilon']), default_value=1)
+            t_o = sp.Int("t_o" + str(i), LSsensorTypesNum + 1, ISsensorTypesNum + LSsensorTypesNum, 
+                       default_value=random.randint(LSsensorTypesNum + 1, ISsensorTypesNum + LSsensorTypesNum))
+
+        elif(initial_state == 'random'):
+            # x_o = sp.Int("x_o" + str(i), 1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon']), 
+            #            default_value=random.randint(1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon'])))
+            
+            objects = ['0.5, 2.7', '3.5, 2.7', '6.7, 1.4', '4.2, 3.2', '1.7, 6.0', '6.0, 3.6', '7.4, 3.6', '1.0, 5.5', '6.8, 5.5', '0.5, 7.1', '2.2, 7.1', '7.1, 6.8']
+
+            objects_location = sp.Categorical('object_location' + str(i), choices = objects, default_value = random.choice(objects))
+            
+            # y_o = sp.Int("y_o" + str(i), 1, int((CONSTANTS['height'] - 1) / CONSTANTS['epsilon']), 
+            #            default_value=random.randint(1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon'])))
+            
+            t_o = sp.Int("t_o" + str(i), LSsensorTypesNum + 1, ISsensorTypesNum + LSsensorTypesNum, 
+                         default_value=random.randint(LSsensorTypesNum + 1, ISsensorTypesNum + LSsensorTypesNum))
+
+        else:
+            raise NotImplementedError (initial_state + " is not implemented yet! Try using 'fixed' or 'random' values istead")
+                
+        list_of_variables.append(objects_location)
+        list_of_variables.append(t_o)
+    
+    return list_of_variables
+
+    
+def run(surrogate_type = 'prf',
+        # acq_optimizer_type = 'random_scipy',
+        acq_optimizer_type = 'local_random',
+        task_id = 'SPO',
+        run_on_colab = False, 
+        iteration = 1000, 
+        epsilon = 1, # The distance between two nodes in the space grid:
+        LSmaxSensorNum = 15,  # max location sensitive sensor numbers
+        ISmaxSensorNum = 10,  # max location sensitive sensor numbers
+        radius = 1, # radius of the motion sensors
+        print_epochs = True,
+        height = 8.0,
+        width = 8.0,
+        ROS = False,
+        multi_objective = False,
+        initial_state = 'fixed',
+        input_sensor_types = {'model_motion_sensor': True, 
+                              'model_beacon_sensor': False,
+                              'model_pressure_sensor': False,
+                              'model_accelerometer': False,
+                              'model_electricity_sensor': False},
+      ):
+
+    global multi_objective_flag
+    global CONSTANTS
+    global runningOnGoogleColab
+    global sensor_types
+    global LSsensorTypesNum
+    global ISsensorTypesNum
+    
+    runningOnGoogleColab = run_on_colab
+    multi_objective_flag = multi_objective
+    CONSTANTS = {
+        'iterations': iteration,
+        'initial_samples': 10,
+        'epsilon': epsilon,
+        'radius': radius,
+        'height': height,
+        'width': width,
+        'max_LS_sensors': LSmaxSensorNum,
+        'max_IS_sensors': ISmaxSensorNum
+    }
+    sensor_types = input_sensor_types
+    LSsensorTypesNum = sum(1 for condition in list(input_sensor_types.values())[0:2] if condition)
+    ISsensorTypesNum = sum(1 for condition in list(input_sensor_types.values())[2:5] if condition)
+
+    if (runningOnGoogleColab == True):
+        from google.colab import drive    
+        drive.mount('/content/gdrive', force_remount=True)
+        Data_path = 'gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/'
+        sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/')
+
+    else:
+        Data_path = '../SensorDeploymentOptimization/'
+        sys.path.append('..')
+
+    finalResults = []
+    w = CONSTANTS['width'] - 0.5
+    h = CONSTANTS['height'] - 0.5
+
+    dataBoundaries = MakeDataBoundaries(
+                                        height = CONSTANTS['height'], 
+                                        width = CONSTANTS['width'], 
+                                        MaxLSSensors = CONSTANTS['max_LS_sensors']
+                                       )
+
+    global BOV
+    BOV =  BOVariables(
+                       Data_path, 
+                       CONSTANTS['epsilon'], 
+                       CONSTANTS['initial_samples'],
+                       CONSTANTS['max_LS_sensors'], 
+                       CONSTANTS['max_IS_sensors'], 
+                       CONSTANTS['radius'],
+                       CONSTANTS['initial_samples'],
+                       ROS = True
+                      )
+    
+    # Define Search Space
+    space = sp.Space()
+
+    
+    if (multi_objective_flag == False):
+        list_of_variables = BuildConfigurationSearchSpace(initial_state)
+
+        space.add_variables(list_of_variables)
+        history_list = []
+
+        opt = Optimizer(
+            function_to_be_optimized,
+            space,
+            max_runs = CONSTANTS['iterations'],
+            surrogate_type = surrogate_type,
+            acq_optimizer_type = acq_optimizer_type,
+            time_limit_per_trial=31000,
+            task_id = task_id,
+        )
+        history = opt.run()
+            
+    '''
+    else:
+        list_of_variables = []
+        for i in range(1, CONSTANTS['max_sensors'] + 1):
+            x = sp.Int("x" + str(i), 0, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon']), default_value=1)
+            y = sp.Int("y" + str(i), 1, int((CONSTANTS['height'] - 1) / CONSTANTS['epsilon']), default_value=1)
+            list_of_variables.append(x)
+            list_of_variables.append(y)
+
+        space.add_variables(list_of_variables)
+
+        history_list = []
+
+        opt = Optimizer(
+            function_to_be_optimized,
+            space,
+            max_runs = CONSTANTS['iterations'],
+            surrogate_type = surrogate_type,
+            acq_optimizer_type = acq_optimizer_type,
+            time_limit_per_trial=31000,
+            task_id = task_id,
+        )
+        history = opt.run()
+    '''
+    
+    return history
+                         
+                         
+                         
+                         
+                         
+                         
 '''
 def confusion_matrix(config):
     sensorPositions = []
@@ -436,153 +656,3 @@ def get_confusion_matrix(config,
     return confusion_matrix(config)
 '''    
 
-def run(surrogate_type = 'prf',
-        acq_optimizer_type = 'random_scipy',
-        task_id = 'SPO',
-        run_on_colab = False, 
-        iteration = 1000, 
-        epsilon = 1, # The distance between two nodes in the space grid:
-        maxSensorNum = 15,  # max sensor numbers
-        radius = 1, # radius of the motion sensors
-        print_epochs = True,
-        height = 8.0,
-        width = 8.0,
-        ROS = False,
-        multi_objective = False,
-        initial_state = 'fixed',
-        input_sensor_types = {'model_motion_sensor': True, 'model_beacon_sensor': False},
-      ):
-
-    global multi_objective_flag
-    global CONSTANTS
-    global runningOnGoogleColab
-    global sensor_types
-    runningOnGoogleColab = run_on_colab
-    multi_objective_flag = multi_objective
-    CONSTANTS = {
-        'iterations': iteration,
-        'initial_samples': 10,
-        'epsilon': epsilon,
-        'radius': radius,
-        'height': height,
-        'width': width,
-        'max_sensors': maxSensorNum
-    }
-    sensor_types = input_sensor_types
-    sensorTypesNum = sum(1 for condition in sensor_types.values() if condition)
-
-    if (runningOnGoogleColab == True):
-        from google.colab import drive    
-        drive.mount('/content/gdrive', force_remount=True)
-        Data_path = 'gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/'
-        sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/')
-
-    else:
-        Data_path = '../SensorDeploymentOptimization/'
-        sys.path.append('..')
-
-    finalResults = []
-    w = CONSTANTS['width'] - 0.5
-    h = CONSTANTS['height'] - 0.5
-
-    dataBoundaries = MakeDataBoundaries(
-                                        height = CONSTANTS['height'], 
-                                        width = CONSTANTS['width'], 
-                                        MaxSensors = CONSTANTS['max_sensors']
-                                       )
-
-    global BOV
-    BOV =  BOVariables(
-                       Data_path, 
-                       CONSTANTS['epsilon'], 
-                       CONSTANTS['max_sensors'], 
-                       CONSTANTS['max_sensors'], 
-                       CONSTANTS['radius'],
-                       CONSTANTS['initial_samples'],
-                       ROS = True
-                      )
-
-    from openbox import sp
-    
-
-    # Define Search Space
-    space = sp.Space()
-
-    
-    if (multi_objective_flag == False):
-        list_of_variables = []
-        for i in range(1, CONSTANTS['max_sensors'] + 1):
-            if initial_state == 'fixed':
-                x = sp.Int("x" + str(i), 1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon']), default_value=1)
-                y = sp.Int("y" + str(i), 1, int((CONSTANTS['height'] - 1) / CONSTANTS['epsilon']), default_value=1)
-                
-                if sensorTypesNum > 1:
-                    t = sp.Int("t" + str(i), 1, sensorTypesNum, default_value=random.randint(1, sensorTypesNum))
-                
-                else:
-                    t = sp.Constant("t" + str(i), 1)
-                
-                list_of_variables.append(x)
-                list_of_variables.append(y)
-                list_of_variables.append(t)
-                
-            elif(initial_state == 'random'):
-                x = sp.Int("x" + str(i), 1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon']), 
-                           default_value=random.randint(1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon'])))
-                
-                y = sp.Int("y" + str(i), 1, int((CONSTANTS['height'] - 1) / CONSTANTS['epsilon']), 
-                           default_value=random.randint(1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon'])))
-                
-                if sensorTypesNum > 1:
-                    t = sp.Int("t" + str(i), 1, sensorTypesNum, default_value=random.randint(1, sensorTypesNum))
-                
-                else:
-                    t = sp.Constant("t" + str(i), 1)
-                
-                list_of_variables.append(x)
-                list_of_variables.append(y)
-                list_of_variables.append(t)
-                
-            else:
-                raise NotImplementedError (initial_state + " is not implemented yet! Try using 'fixed' or 'random' values istead")
-
-
-        space.add_variables(list_of_variables)
-        history_list = []
-
-        opt = Optimizer(
-            function_to_be_optimized,
-            space,
-            max_runs = CONSTANTS['iterations'],
-            surrogate_type = surrogate_type,
-            acq_optimizer_type = acq_optimizer_type,
-            time_limit_per_trial=31000,
-            task_id = task_id,
-        )
-        history = opt.run()
-            
-    
-    else:
-        list_of_variables = []
-        for i in range(1, CONSTANTS['max_sensors'] + 1):
-            x = sp.Int("x" + str(i), 0, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon']), default_value=1)
-            y = sp.Int("y" + str(i), 1, int((CONSTANTS['height'] - 1) / CONSTANTS['epsilon']), default_value=1)
-            list_of_variables.append(x)
-            list_of_variables.append(y)
-
-        space.add_variables(list_of_variables)
-
-        history_list = []
-
-        opt = Optimizer(
-            function_to_be_optimized,
-            space,
-            max_runs = CONSTANTS['iterations'],
-            surrogate_type = surrogate_type,
-            acq_optimizer_type = acq_optimizer_type,
-            time_limit_per_trial=31000,
-            task_id = task_id,
-        )
-        history = opt.run()
-    
-    return history

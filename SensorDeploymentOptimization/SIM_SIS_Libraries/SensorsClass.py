@@ -56,3 +56,10 @@ class BeaconSensor(Sensor):
         noise = np.random.normal(0, dist, 1)
         
         return rawValue + noise
+    
+class InteractiveSensitive(Sensor):
+    def __init__(self, x, y, radius, room, sensitivity, sensor_id):
+        Sensor.Initialize(self, x, y, "IS", sensor_id)
+        self.sensing_area = radius * 100
+        self.sensitivity = sensitivity
+        
