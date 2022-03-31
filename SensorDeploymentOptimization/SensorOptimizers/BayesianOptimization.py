@@ -354,24 +354,24 @@ def function_to_be_optimized(config):
     sensorPositions = []
     sensorTypes = []
     sensor_xy = []
-    
     excluded = []
+    
+    if (LSsensorTypesNum > 0):
+        for i in range(1, CONSTANTS['max_LS_sensors'] + 1):
+            sensor_xy.append(config['x' + str(i)] * CONSTANTS['epsilon'])
+            sensor_xy.append(config['y' + str(i)] * CONSTANTS['epsilon'])
+            sensorTypes.append(config['t' + str(i)])
+            sensorPositions.append(sensor_xy)
+            sensor_xy = []
 
-    for i in range(1, CONSTANTS['max_LS_sensors'] + 1):
-        sensor_xy.append(config['x' + str(i)] * CONSTANTS['epsilon'])
-        sensor_xy.append(config['y' + str(i)] * CONSTANTS['epsilon'])
-        sensorTypes.append(config['t' + str(i)])
-        sensorPositions.append(sensor_xy)
-        sensor_xy = []
-
-        
-    for i in range(1, CONSTANTS['max_IS_sensors'] + 1):
-        object_location = config['object_location' + str(i)].split(',')
-        sensor_xy.append(float(object_location[0]))
-        sensor_xy.append(float(object_location[1]))
-        sensorTypes.append(config['t_o' + str(i)])
-        sensorPositions.append(sensor_xy)
-        sensor_xy = []
+    if (ISsensorTypesNum > 0):
+        for i in range(1, CONSTANTS['max_IS_sensors'] + 1):
+            object_location = config['object_location' + str(i)].split(',')
+            sensor_xy.append(float(object_location[0]))
+            sensor_xy.append(float(object_location[1]))
+            sensorTypes.append(config['t_o' + str(i)])
+            sensorPositions.append(sensor_xy)
+            sensor_xy = []
 
     data = Data(sensorPositions, sensorTypes, BOV.space, CONSTANTS['epsilon'])
 
@@ -385,63 +385,66 @@ def function_to_be_optimized(config):
 
 def BuildConfigurationSearchSpace(initial_state):
     list_of_variables = []
-    for i in range(1, CONSTANTS['max_LS_sensors'] + 1):
-        if initial_state == 'fixed':
-            x = sp.Int("x" + str(i), 1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon']), default_value=1)
-            y = sp.Int("y" + str(i), 1, int((CONSTANTS['height'] - 1) / CONSTANTS['epsilon']), default_value=1)
+    if (LSsensorTypesNum > 0):
+        for i in range(1, CONSTANTS['max_LS_sensors'] + 1):
+            if initial_state == 'fixed':
+                x = sp.Int("x" + str(i), 1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon']), default_value=1)
+                y = sp.Int("y" + str(i), 1, int((CONSTANTS['height'] - 1) / CONSTANTS['epsilon']), default_value=1)
 
-            if LSsensorTypesNum > 1:
-                t = sp.Int("t" + str(i), 1, LSsensorTypesNum, default_value=random.randint(1, LSsensorTypesNum))
+                if LSsensorTypesNum > 1:
+                    t = sp.Int("t" + str(i), 1, LSsensorTypesNum, default_value=random.randint(1, LSsensorTypesNum))
+
+                else:
+                    t = sp.Constant("t" + str(i), 1)
+
+            elif(initial_state == 'random'):
+                x = sp.Int("x" + str(i), 1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon']), 
+                           default_value=random.randint(1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon'])))
+
+                y = sp.Int("y" + str(i), 1, int((CONSTANTS['height'] - 1) / CONSTANTS['epsilon']), 
+                           default_value=random.randint(1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon'])))
+
+                if LSsensorTypesNum > 1:
+                    t = sp.Int("t" + str(i), 1, LSsensorTypesNum, default_value=random.randint(1, LSsensorTypesNum))
+
+                else:
+                    t = sp.Constant("t" + str(i), 1)
 
             else:
-                t = sp.Constant("t" + str(i), 1)
+                raise NotImplementedError (initial_state + " is not implemented yet! Try using 'fixed' or 'random' values istead")
 
-        elif(initial_state == 'random'):
-            x = sp.Int("x" + str(i), 1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon']), 
-                       default_value=random.randint(1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon'])))
-
-            y = sp.Int("y" + str(i), 1, int((CONSTANTS['height'] - 1) / CONSTANTS['epsilon']), 
-                       default_value=random.randint(1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon'])))
-
-            if LSsensorTypesNum > 1:
-                t = sp.Int("t" + str(i), 1, LSsensorTypesNum, default_value=random.randint(1, LSsensorTypesNum))
-
-            else:
-                t = sp.Constant("t" + str(i), 1)
-
-        else:
-            raise NotImplementedError (initial_state + " is not implemented yet! Try using 'fixed' or 'random' values istead")
-                
-        list_of_variables.append(x)
-        list_of_variables.append(y)
-        list_of_variables.append(t)
+            list_of_variables.append(x)
+            list_of_variables.append(y)
+            list_of_variables.append(t)
     
-    for i in range(1, CONSTANTS['max_IS_sensors'] + 1):
-        if initial_state == 'fixed':
-            x_o = sp.Int("x_o" + str(i), 1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon']), default_value=1)
-            y_o = sp.Int("y_o" + str(i), 1, int((CONSTANTS['height'] - 1) / CONSTANTS['epsilon']), default_value=1)
-            t_o = sp.Int("t_o" + str(i), LSsensorTypesNum + 1, ISsensorTypesNum + LSsensorTypesNum, 
-                       default_value=random.randint(LSsensorTypesNum + 1, ISsensorTypesNum + LSsensorTypesNum))
+    if (ISsensorTypesNum > 0):
+        for i in range(1, CONSTANTS['max_IS_sensors'] + 1):
+            if initial_state == 'fixed':
+                x_o = sp.Int("x_o" + str(i), 1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon']), default_value=1)
+                y_o = sp.Int("y_o" + str(i), 1, int((CONSTANTS['height'] - 1) / CONSTANTS['epsilon']), default_value=1)
+                t_o = sp.Int("t_o" + str(i), LSsensorTypesNum + 1, ISsensorTypesNum + LSsensorTypesNum, 
+                           default_value=random.randint(LSsensorTypesNum + 1, ISsensorTypesNum + LSsensorTypesNum))
 
-        elif(initial_state == 'random'):
-            # x_o = sp.Int("x_o" + str(i), 1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon']), 
-            #            default_value=random.randint(1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon'])))
-            
-            objects = ['0.5, 2.7', '3.5, 2.7', '6.7, 1.4', '4.2, 3.2', '1.7, 6.0', '6.0, 3.6', '7.4, 3.6', '1.0, 5.5', '6.8, 5.5', '0.5, 7.1', '2.2, 7.1', '7.1, 6.8']
+            elif(initial_state == 'random'):
+                # x_o = sp.Int("x_o" + str(i), 1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon']), 
+                #            default_value=random.randint(1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon'])))
 
-            objects_location = sp.Categorical('object_location' + str(i), choices = objects, default_value = random.choice(objects))
-            
-            # y_o = sp.Int("y_o" + str(i), 1, int((CONSTANTS['height'] - 1) / CONSTANTS['epsilon']), 
-            #            default_value=random.randint(1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon'])))
-            
-            t_o = sp.Int("t_o" + str(i), LSsensorTypesNum + 1, ISsensorTypesNum + LSsensorTypesNum, 
-                         default_value=random.randint(LSsensorTypesNum + 1, ISsensorTypesNum + LSsensorTypesNum))
+                #TODO:
+                objects = ['0.5, 2.7', '3.5, 2.7', '6.7, 1.4', '4.2, 3.2', '1.7, 6.0', '6.0, 3.6', '7.4, 3.6', '1.0, 5.5', '6.8, 5.5', '0.5, 7.1', '2.2, 7.1', '7.1, 6.8']
 
-        else:
-            raise NotImplementedError (initial_state + " is not implemented yet! Try using 'fixed' or 'random' values istead")
-                
-        list_of_variables.append(objects_location)
-        list_of_variables.append(t_o)
+                objects_location = sp.Categorical('object_location' + str(i), choices = objects, default_value = random.choice(objects))
+
+                # y_o = sp.Int("y_o" + str(i), 1, int((CONSTANTS['height'] - 1) / CONSTANTS['epsilon']), 
+                #            default_value=random.randint(1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon'])))
+
+                t_o = sp.Int("t_o" + str(i), LSsensorTypesNum + 1, ISsensorTypesNum + LSsensorTypesNum, 
+                             default_value=random.randint(LSsensorTypesNum + 1, ISsensorTypesNum + LSsensorTypesNum))
+
+            else:
+                raise NotImplementedError (initial_state + " is not implemented yet! Try using 'fixed' or 'random' values istead")
+
+            list_of_variables.append(objects_location)
+            list_of_variables.append(t_o)
     
     return list_of_variables
 
@@ -488,6 +491,7 @@ def run(surrogate_type = 'prf',
         'max_LS_sensors': LSmaxSensorNum,
         'max_IS_sensors': ISmaxSensorNum
     }
+    
     sensor_types = input_sensor_types
     LSsensorTypesNum = sum(1 for condition in list(input_sensor_types.values())[0:2] if condition)
     ISsensorTypesNum = sum(1 for condition in list(input_sensor_types.values())[2:5] if condition)
@@ -511,7 +515,6 @@ def run(surrogate_type = 'prf',
                                         width = CONSTANTS['width'], 
                                         MaxLSSensors = CONSTANTS['max_LS_sensors']
                                        )
-
     global BOV
     BOV =  BOVariables(
                        Data_path, 
@@ -527,7 +530,6 @@ def run(surrogate_type = 'prf',
     # Define Search Space
     space = sp.Space()
 
-    
     if (multi_objective_flag == False):
         list_of_variables = BuildConfigurationSearchSpace(initial_state)
 
