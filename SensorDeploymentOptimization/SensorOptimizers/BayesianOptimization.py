@@ -47,16 +47,21 @@ class Data:
 
         # TODO: DIFFERENT SENSOR TYPE DEFINITIONS SHOULD BE ADDED HERE:
         configurationSummary = []
-        for key in summaryDict:
+        
+        IS_handled = False
+        
+        for key in summaryDict.keys():
             if (key == 1):
                 configurationSummary.append(['motion sensors', summaryDict[key]])
 
             elif (key == 2):
                 configurationSummary.append(['beacon sensors', summaryDict[key]])
                 
-            elif (key == 3):
-                configurationSummary.append(['IS', summaryDict[key]])
-
+            elif (key >= 3):
+                if IS_handled == False:
+                    ISCount = sum([v for k,v in summaryDict.items() if k >= 3])
+                    configurationSummary.append(['IS', ISCount])           
+                    IS_handled = True
                 
         
         configurationDetails = []
@@ -85,7 +90,8 @@ class Data:
             else:
                 configurationDetails.append(tuple([loc, room, 'motion sensors']))
         
-        return [[configurationSummary, [tuple(configurationDetails)]], self.radius]
+        sensor_config = [[configurationSummary, [tuple(configurationDetails)]], self.radius]
+        return sensor_config
 
 
     def GetSensorLocations(self):
@@ -166,9 +172,15 @@ def MakeSensorCombinations(start, end, epsilon, sensorType, room):
     return C
 
 def PreProcessor(df):
+    '''
     df['motion sensors'] = df['motion sensors'].apply(lambda s: list(map(int, s)))
     try:
         df['beacon sensors'] = df['beacon sensors'].apply(lambda s: list(map(int, s)))
+    except:
+        pass
+    
+    try:
+        df['IS'] = df['IS'].apply(lambda s: list(map(int, s)))
     except:
         pass
 
@@ -263,6 +275,180 @@ def PreProcessor(df):
           sensors.add(s)
 
     return output_file, list(sensors)
+    '''
+
+
+
+
+
+
+    df['motion sensors'] = df['motion sensors'].apply(lambda s: list(map(int, s)))
+    try:
+        df['beacon sensors'] = df['beacon sensors'].apply(lambda s: list(map(int, s)))
+    except:
+        pass
+    try:
+        df['IS'] = df['IS'].apply(lambda s: list(map(int, s)))
+    except:
+        pass
+    
+    pre_activity = ''
+    save_index = 0
+
+    for index, row in df.iterrows():
+        save_index = index
+        Activity = row['activity']
+
+        if Activity != pre_activity:
+            if pre_activity != '':
+                df.at[index - 1, 'motion sensors'] += [0]
+                df.at[index - 1, 'IS'] += [0]
+            else:
+                df.at[index, 'motion sensors'] += [1]
+                df.at[index, 'IS'] += [1]
+
+            pre_activity = Activity
+        else:
+            df.at[index - 1, 'motion sensors'] += [1]
+            df.at[index - 1, 'IS'] += [1]
+            
+    df.at[save_index, 'motion sensors'] += [0]
+    df.at[save_index, 'IS'] += [0]
+
+    sensors = set([])
+
+    previous_M = None
+    previous_B = None
+    previous_I = None
+    
+    output_file = []
+
+    for index, row in df.iterrows():
+      T = row['time']
+      M = row['motion sensors']
+      try:
+        B = row['beacon sensors']
+      except:
+        pass
+    
+      try:
+        I = row['IS']
+      except:
+        pass
+
+      Activity = row['activity']
+      Activity = Activity.replace(' ', '_')
+      MotionSensor_Names = []
+      sensorNames = []
+      MotionSensor_Message = []
+      BeaconSensor_Names = []
+      BeaconSensor_Message = []
+      ISSensor_Names = []
+      ISSensor_Message = []
+      
+
+      # time = convertTime(T)
+      time = "2020-06-16 " + T + ".00"
+
+        
+    
+      # Motion Sensor
+      try:
+          for i in range(len(M)):
+                sensorNames.append(Name(i, 'M'))
+                if M[i] == 1:
+                      if (previous_M != None):
+                        if (previous_M[i] == 0):
+                          MotionSensor_Names.append(Name(i,'M'))
+                          MotionSensor_Message.append('ON')
+
+                      else:
+                        MotionSensor_Names.append(Name(i,'M'))
+                        MotionSensor_Message.append('ON')
+
+                if previous_M != None:
+                      if M[i] == 0 and previous_M[i] == 1:
+                        MotionSensor_Names.append(Name(i,'M'))
+                        MotionSensor_Message.append('OFF')
+
+          previous_M = M
+          
+      except:
+        pass
+    
+      # Beacon Sensor
+      try:
+        for i in range(len(B)):
+              sensorNames.append(Name(i, 'B'))
+              if B[i] > -200:
+                    if (previous_B != None):
+                        if (previous_B[i] == 0):
+                          BeaconSensor_Names.append(Name(i,'B'))
+                          if B[i] >= -50:
+                              BeaconSensor_Message.append('1')
+                            
+                          elif B[i] < -50:
+                              BeaconSensor_Message.append('0.5')
+
+
+                    else:
+                        BeaconSensor_Names.append(Name(i,'B'))
+                        if B[i] >= -50:
+                           BeaconSensor_Message.append('1')
+                        
+                        elif B[i] < -50:
+                           BeaconSensor_Message.append('0.5')
+
+              if previous_B != None:
+                    if B[i] <= -200 and previous_B[i] > -200:
+                        BeaconSensor_Names.append(Name(i,'B'))
+                        BeaconSensor_Message.append('0')
+
+        previous_M = M
+        
+      except:
+        pass
+    
+    
+      try:
+          for i in range(len(I)):
+            sensorNames.append(Name(i, 'IS'))
+            if I[i] == 1:
+              if (previous_I != None):
+                if (previous_I[i] == 0):
+                  ISSensor_Names.append(Name(i,'IS'))
+                  ISSensor_Message.append('ON')
+
+              else:
+                ISSensor_Names.append(Name(i,'IS'))
+                ISSensor_Message.append('ON')
+
+            if previous_I != None:
+              if I[i] == 0 and previous_I[i] == 1:
+                ISSensor_Names.append(Name(i,'IS'))
+                ISSensor_Message.append('OFF')
+
+          previous_I = I
+          
+      except:
+          pass  
+
+      for m in range(len(MotionSensor_Names)):
+        output_file.append(time +' '+ MotionSensor_Names[m] + ' ' + MotionSensor_Names[m] + ' ' + MotionSensor_Message[m] + ' ' + Activity)
+        
+      for b in range(len(BeaconSensor_Names)):
+        output_file.append(time +' '+ BeaconSensor_Names[b] + ' ' + BeaconSensor_Names[b] + ' ' + BeaconSensor_Message[b] + ' ' + Activity)
+        
+      for i_s in range(len(ISSensor_Names)):
+        output_file.append(time +' '+ ISSensor_Names[i_s] + ' ' + ISSensor_Names[i_s] + ' ' + ISSensor_Message[i_s] + ' ' + Activity)
+        
+      for s in sensorNames:
+          sensors.add(s)
+
+    return output_file, list(sensors)
+
+
+
 
 #returns the name of the sensor
 def Name(number, typeSensor):
@@ -294,8 +480,6 @@ def black_box_function(sample, simulateMotionSensors = True, simulateEstimotes =
     all_sensors = set([])
     
     for agentTrace in BOV.agentTraces:
-        # print('-' * 50)
-        # print('------- RunSimulator')
         df_ = sim_sis.RunSimulator(BOV.space, 
                                    BOV.rooms, 
                                    agentTrace,
@@ -306,18 +490,11 @@ def black_box_function(sample, simulateMotionSensors = True, simulateEstimotes =
                                    Plotting, 
                                    BOV.Data_path)
         
-        # print('------- RunSimulator ended') 
-        # print('------- PreProcessor')
         dataFile, sensors = PreProcessor(df_)
-        # print('------- PreProcessor ended')
         all_sensors.update(sensors)
         files.append(dataFile)
-        
-
-    
     
     all_sensors = list(all_sensors)
-    
     f1_score = (al.leave_one_out(files, all_sensors)[0]) * 100
     
     try:
@@ -375,6 +552,9 @@ def function_to_be_optimized(config):
 
     data = Data(sensorPositions, sensorTypes, BOV.space, CONSTANTS['epsilon'])
 
+    
+    print(sensorTypes)
+    
     return 100 - black_box_function(data, 
                                     simulateMotionSensors = sensor_types['model_motion_sensor'],
                                     simulateEstimotes = sensor_types['model_beacon_sensor'],
@@ -426,20 +606,17 @@ def BuildConfigurationSearchSpace(initial_state):
                            default_value=random.randint(LSsensorTypesNum + 1, ISsensorTypesNum + LSsensorTypesNum))
 
             elif(initial_state == 'random'):
-                # x_o = sp.Int("x_o" + str(i), 1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon']), 
-                #            default_value=random.randint(1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon'])))
 
                 #TODO:
                 objects = ['0.5, 2.7', '3.5, 2.7', '6.7, 1.4', '4.2, 3.2', '1.7, 6.0', '6.0, 3.6', '7.4, 3.6', '1.0, 5.5', '6.8, 5.5', '0.5, 7.1', '2.2, 7.1', '7.1, 6.8']
 
                 objects_location = sp.Categorical('object_location' + str(i), choices = objects, default_value = random.choice(objects))
 
-                # y_o = sp.Int("y_o" + str(i), 1, int((CONSTANTS['height'] - 1) / CONSTANTS['epsilon']), 
-                #            default_value=random.randint(1, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon'])))
-
-                t_o = sp.Int("t_o" + str(i), LSsensorTypesNum + 1, ISsensorTypesNum + LSsensorTypesNum, 
-                             default_value=random.randint(LSsensorTypesNum + 1, ISsensorTypesNum + LSsensorTypesNum))
-
+                t_o = sp.Int("t_o" + str(i), 2 + 1, 2 + ISsensorTypesNum, 
+                             default_value=random.randint(2 + 1, 2 + ISsensorTypesNum))
+                
+                # t_o = sp.Constant("t_o" + str(i), 3)
+                
             else:
                 raise NotImplementedError (initial_state + " is not implemented yet! Try using 'fixed' or 'random' values istead")
 

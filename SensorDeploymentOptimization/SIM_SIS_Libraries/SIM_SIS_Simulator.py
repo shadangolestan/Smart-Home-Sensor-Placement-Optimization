@@ -47,11 +47,9 @@ def getActionsList(file_path):
                     if len(a) > 0:
                         actions_list.append(a)
 
-
         except:
             pass
 
-    #     print(actions_list)
     return list(set(actions_list))
 
 #DONE
@@ -170,7 +168,6 @@ def VectorizeSensorReadings(fs, time, agent1Loc, simulateMotionSensors, simulate
             motionNumbers = sensorsTypes[[a[0] for a in sensorsTypes].index('motion sensors')][1]
         except:
             motionNumbers = 0
-            
         sensor_bins = [0] * motionNumbers
     
     if (simulateEstimotes):
@@ -178,7 +175,6 @@ def VectorizeSensorReadings(fs, time, agent1Loc, simulateMotionSensors, simulate
             beaconNumbers = sensorsTypes[[a[0] for a in sensorsTypes].index('beacon sensors')][1]
         except:
             beaconNumbers = 0
-            
         estimote_bins = [0] * beaconNumbers
         
     if (simulateISSensors):
@@ -186,7 +182,6 @@ def VectorizeSensorReadings(fs, time, agent1Loc, simulateMotionSensors, simulate
             ISNumbers = sensorsTypes[[a[0] for a in sensorsTypes].index('IS')][1]
         except:
             ISNumbers = 0
-            
         IS_bins = [0] * ISNumbers
         
     if len(fs) == 0:
@@ -203,7 +198,7 @@ def VectorizeSensorReadings(fs, time, agent1Loc, simulateMotionSensors, simulate
                 simulated_estimote_readings[time] = []
                 
         if (simulateISSensors):
-            if (len(estimote_bins) > 0):
+            if (len(IS_bins) > 0):
                 simulated_IS_readings[time] = list(map(sum, zip(simulated_IS_readings[time], IS_bins))) 
             else:
                 simulated_IS_readings[time] = []
@@ -236,7 +231,7 @@ def VectorizeSensorReadings(fs, time, agent1Loc, simulateMotionSensors, simulate
                 simulated_estimote_readings[time] = []
                 
         if (simulateISSensors):
-            if (len(estimote_bins) > 0):
+            if (len(IS_bins) > 0):
                 simulated_IS_readings[time] = list(map(sum, zip(simulated_IS_readings[time], IS_bins))) 
             else:
                 simulated_IS_readings[time] = []
@@ -344,12 +339,12 @@ def SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, simulateISS
                 
         if (simulateISSensors and sensor.sensor_type == "IS"):
             if (plotflag):
-                pp = ax.plot(float(sensor.x) / 100, float(sensor.y) / 100 , marker= '2' , color='k', lw=5)                
+                pp = ax.plot(float(sensor.x) / 100, float(sensor.y) / 100 , marker= '3' , color='r', lw=5)                
 
             circ = Circle((float(float(sensor.x) / 100), float(float(sensor.y) / 100)), float(float(sensor.sensing_area) / 100))
-            if (circ.contains_point([agent1Loc[0], agent1Loc[1]]) and 
-                (RecContains(agent1Loc[0], agent1Loc[1], sensor.room)) and 
-                (sensor.sensitivity == getSensitivity(action, IS))):
+            
+            
+            if (circ.contains_point([agent1Loc[0], agent1Loc[1]]) and (RecContains(agent1Loc[0], agent1Loc[1], sensor.room)) and (sensor.sensitivity == getSensitivity(action, IS))):
                 from math import dist
                 no_event_flag = 0
                 event = ec.Event()
@@ -382,6 +377,8 @@ def SimulateSensorReadings(simulateMotionSensors, simulateEstimotes, simulateISS
         fig.canvas.draw()
         plt.title(str((agent1Loc[0], agent1Loc[1])) + " : " + action)
         # ax.cla()
+        img = plt.imread("case study (IFC).png")
+        im = plt.imshow(np.flipud(img), origin='upper', extent=[0.0, 8.0, 0.0, 8.0])
         display.clear_output(wait=True)
         display.display(pl.gcf())
         
@@ -427,6 +424,10 @@ def CreateUltimateDataset(UDN, epoch):
         simulated_estimote_readings.append([0]*len(simulated_estimote_readings[0]))
         df_['beacon sensors'] = [[float(j)/epoch for j in i] for i in simulated_estimote_readings[0: len(df_.x)]]
         
+    except:
+        pass
+    
+    try:
         simulated_IS_readings.append([0]*len(simulated_IS_readings[0]))
         df_['IS'] = [[float(j)/epoch for j in i] for i in simulated_IS_readings[0: len(df_.x)]]
         
@@ -466,37 +467,26 @@ def getSensitivityDict(actions):
     }
 
     for a in actions:
-        if ('eat' in a.lower() or 
-            'sit' in a.lower() or 
-            'bath' in a.lower() or 
-            'take_medicine' in a.lower() or 
-            'toilet' in a.lower() or 
-            'sleep' in a.lower()):
+        if ('eat' in a.lower() or 'sit' in a.lower() or 'bath' in a.lower() or 
+            'take_medicine' in a.lower() or 'toilet' in a.lower() or 'sleep' in a.lower()):
             IS['pressure'].append(a)
 
-        elif ('wash_hands' in a.lower() or 
-              'grab_utensils' in a.lower() or 
-              'make_tea' in a.lower() or 
-              'wash_dishes' in a.lower() or 
-              'grab_ingredients' in a.lower() or 
-              'leave_groom' in a.lower() or 
-              'grab_groom' in a.lower() or 
-              'dressing' in a.lower() or 
-              'undressing' in a.lower()):
+        elif ('wash_hands' in a.lower() or 'grab_utensils' in a.lower() or 
+              'make_tea' in a.lower() or 'wash_dishes' in a.lower() or 
+              'grab_ingredients' in a.lower() or 'leave_groom' in a.lower() or 
+              'grab_groom' in a.lower() or 'dressing' in a.lower() or 'undressing' in a.lower()):
             IS['accelerometer'].append(a)
 
-        elif ('toast_bread' in a.lower() or 
-              'iron' in a.lower() or 
-              'fry_eggs' in a.lower() or 
-              'entertainment' in a.lower()):
+        elif ('toast_bread' in a.lower() or 'iron' in a.lower() or 
+              'fry_eggs' in a.lower() or 'entertainment' in a.lower()):
             IS['electricity'].append(a)
-
-        return IS
+    
+    return IS
     
 def getSensitivity(val, IS):
     for key, items in IS.items():
         for item in items:
-            if val == item:
+            if item in val:
                  return key
  
     return "None"
