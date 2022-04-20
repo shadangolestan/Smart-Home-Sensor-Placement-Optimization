@@ -302,18 +302,15 @@ def PreProcessor(df):
         if Activity != pre_activity:
             if pre_activity != '':
                 df.at[index - 1, 'motion sensors'] += [0]
-                df.at[index - 1, 'IS'] += [0]
+
             else:
                 df.at[index, 'motion sensors'] += [1]
-                df.at[index, 'IS'] += [1]
 
             pre_activity = Activity
         else:
             df.at[index - 1, 'motion sensors'] += [1]
-            df.at[index - 1, 'IS'] += [1]
             
     df.at[save_index, 'motion sensors'] += [0]
-    df.at[save_index, 'IS'] += [0]
 
     sensors = set([])
 
@@ -376,6 +373,30 @@ def PreProcessor(df):
       except:
         pass
     
+      try:
+          for i in range(len(I)):
+            sensorNames.append(Name(i, 'IS'))
+            if I[i] == 1:
+                  if (previous_I != None):
+                    if (previous_I[i] == 0):
+                      ISSensor_Names.append(Name(i,'IS'))
+                      ISSensor_Message.append('ON')
+
+                  else:
+                    ISSensor_Names.append(Name(i,'IS'))
+                    ISSensor_Message.append('ON')
+
+            if previous_I != None:
+                  if I[i] == 0 and previous_I[i] == 1:
+                    ISSensor_Names.append(Name(i,'IS'))
+                    ISSensor_Message.append('OFF')
+
+          previous_I = I
+
+      except:
+          pass 
+
+      '''
       # Beacon Sensor
       try:
         for i in range(len(B)):
@@ -408,43 +429,29 @@ def PreProcessor(df):
         
       except:
         pass
+       '''
     
     
-      try:
-          for i in range(len(I)):
-            sensorNames.append(Name(i, 'IS'))
-            if I[i] == 1:
-              if (previous_I != None):
-                if (previous_I[i] == 0):
-                  ISSensor_Names.append(Name(i,'IS'))
-                  ISSensor_Message.append('ON')
-
-              else:
-                ISSensor_Names.append(Name(i,'IS'))
-                ISSensor_Message.append('ON')
-
-            if previous_I != None:
-              if I[i] == 0 and previous_I[i] == 1:
-                ISSensor_Names.append(Name(i,'IS'))
-                ISSensor_Message.append('OFF')
-
-          previous_I = I
-          
-      except:
-          pass  
+       
 
       for m in range(len(MotionSensor_Names)):
         output_file.append(time +' '+ MotionSensor_Names[m] + ' ' + MotionSensor_Names[m] + ' ' + MotionSensor_Message[m] + ' ' + Activity)
         
+      ''' 
       for b in range(len(BeaconSensor_Names)):
         output_file.append(time +' '+ BeaconSensor_Names[b] + ' ' + BeaconSensor_Names[b] + ' ' + BeaconSensor_Message[b] + ' ' + Activity)
-        
+      '''
+    
       for i_s in range(len(ISSensor_Names)):
         output_file.append(time +' '+ ISSensor_Names[i_s] + ' ' + ISSensor_Names[i_s] + ' ' + ISSensor_Message[i_s] + ' ' + Activity)
         
       for s in sensorNames:
           sensors.add(s)
-
+    
+    # for row in output_file:
+    #     print(row)
+    
+    
     return output_file, list(sensors)
 
 
@@ -553,7 +560,7 @@ def function_to_be_optimized(config):
     data = Data(sensorPositions, sensorTypes, BOV.space, CONSTANTS['epsilon'])
 
     
-    print(sensorTypes)
+    # print(sensorTypes)
     
     return 100 - black_box_function(data, 
                                     simulateMotionSensors = sensor_types['model_motion_sensor'],
