@@ -19,12 +19,16 @@ import CASAS.al as al
 import pickle
 
 class Data:
-    def __init__(self, sensorPositions, space, epsilon):
+    def __init__(self, sensorPositions, sensorTypes, space, epsilon):
         self.radius = 1
         self.placeHolders = sensorPositions
+        self.sensorTypes = sensorTypes
         self.epsilon = epsilon
         self.space = space
         # self.SensorPlaceHolderSetup()
+        self.sensitivity = {'3': 'pressure',
+                            '4': 'accelerometer',
+                            '5': 'electricity'}
         
     def frange(self, start, stop, step):
         steps = []
@@ -37,9 +41,7 @@ class Data:
     def GetSensorConfiguration(self):
         from collections import Counter
         sensorLocations, sensorTypes = self.GetSensorLocations()
-        
         _, rooms = pf.ParseWorld(simworldname = '')
-        
         summaryDict = Counter(sensorTypes)
 
         # TODO: DIFFERENT SENSOR TYPE DEFINITIONS SHOULD BE ADDED HERE:
@@ -51,6 +53,12 @@ class Data:
             elif (key == 2):
                 configurationSummary.append(['beacon sensors', summaryDict[key]])
 
+            elif (key >= 3):
+                if IS_handled == False:
+                    ISCount = sum([v for k,v in summaryDict.items() if k >= 3])
+                    configurationSummary.append(['IS', ISCount])           
+                    IS_handled = True
+            
         configurationDetails = []
         for index, loc in enumerate(sensorLocations):
             room = ""
@@ -65,7 +73,20 @@ class Data:
             elif (sensorTypes[index] == 2):
                 configurationDetails.append(tuple([loc, room, 'beacon sensors']))
 
-        return [[configurationSummary, [tuple(configurationDetails)]], self.radius]
+            elif (self.sensorTypes[index] == 3):
+                configurationDetails.append(tuple([loc, room, 'IS', self.sensitivity['3']]))
+                
+            elif (self.sensorTypes[index] == 4):
+                configurationDetails.append(tuple([loc, room, 'IS', self.sensitivity['4']]))
+                
+            elif (self.sensorTypes[index] == 5):
+                configurationDetails.append(tuple([loc, room, 'IS', self.sensitivity['5']]))
+                
+            else:
+                configurationDetails.append(tuple([loc, room, 'motion sensors']))
+                
+        sensor_config = [[configurationSummary, [tuple(configurationDetails)]], self.radius]
+        return sensor_config
 
 
     def GetSensorLocations(self):
@@ -77,16 +98,16 @@ class Data:
             # TODO: DIFFERENT SENSOR TYPE DEFINITIONS SHOULD BE ADDED HERE:
             sensorTypes.append(1)
 
-
         return sensorLocations, sensorTypes
 
 
 class BOVariables:
-    def __init__(self, Data_path, epsilon, initSensorNum, maxSensorNum, radius, sampleSize, ROS):
+    def __init__(self, Data_path, epsilon, initSensorNum, maxLSSensorNum, maxISSensorNum, radius, sampleSize, ROS):
         self.epsilon = epsilon
         self.Data_path = Data_path
         self.initSensorNum = initSensorNum
-        self.maxSensorNum = maxSensorNum
+        self.maxLSSensorNum = maxLSSensorNum
+        self.maxISSensorNum = maxISSensorNum
         self.radius = radius
         self.sensor_distribution, self.types, self.space, self.rooms, self.agentTraces = self.ModelsInitializations(ROS)
 
@@ -150,15 +171,16 @@ def MakeSensorCombinations(start, end, epsilon, sensorType, room):
     return C
 
 def PreProcessor(df):
-    # df['motion sensors'] = df['motion sensors'].apply(ast.literal_eval)
     df['motion sensors'] = df['motion sensors'].apply(lambda s: list(map(int, s)))
-    #df['motion sensors'] = df['motion sensors'].apply(lambda s: s + [1])
-    # df['beacon sensors'] = df['beacon sensors'].apply(ast.literal_eval)
     try:
-      df['beacon sensors'] = df['beacon sensors'].apply(lambda s: list(map(int, s)))
+        df['beacon sensors'] = df['beacon sensors'].apply(lambda s: list(map(int, s)))
     except:
-      pass
-
+        pass
+    try:
+        df['IS'] = df['IS'].apply(lambda s: list(map(int, s)))
+    except:
+        pass
+    
     pre_activity = ''
     save_index = 0
 
@@ -169,19 +191,22 @@ def PreProcessor(df):
         if Activity != pre_activity:
             if pre_activity != '':
                 df.at[index - 1, 'motion sensors'] += [0]
+
             else:
                 df.at[index, 'motion sensors'] += [1]
 
             pre_activity = Activity
         else:
             df.at[index - 1, 'motion sensors'] += [1]
-
+            
     df.at[save_index, 'motion sensors'] += [0]
 
     sensors = set([])
 
     previous_M = None
     previous_B = None
+    previous_I = None
+    
     output_file = []
 
     for index, row in df.iterrows():
@@ -189,6 +214,11 @@ def PreProcessor(df):
       M = row['motion sensors']
       try:
         B = row['beacon sensors']
+      except:
+        pass
+    
+      try:
+        I = row['IS']
       except:
         pass
 
@@ -199,53 +229,118 @@ def PreProcessor(df):
       MotionSensor_Message = []
       BeaconSensor_Names = []
       BeaconSensor_Message = []
+      ISSensor_Names = []
+      ISSensor_Message = []
       
 
       # time = convertTime(T)
       time = "2020-06-16 " + T + ".00"
 
+        
+    
       # Motion Sensor
-      for i in range(len(M)):
-        sensorNames.append(Name(i, 'M'))
-        if M[i] == 1:
-          if (previous_M != None):
-            if (previous_M[i] == 0):
-              MotionSensor_Names.append(Name(i,'M'))
-              MotionSensor_Message.append('ON')
-
-          else:
-            MotionSensor_Names.append(Name(i,'M'))
-            MotionSensor_Message.append('ON')
-
-        if previous_M != None:
-          if M[i] == 0 and previous_M[i] == 1:
-            MotionSensor_Names.append(Name(i,'M'))
-            MotionSensor_Message.append('OFF')
-
-      previous_M = M
-      # Beacon Sensor
-
       try:
-        for i in range(len(B)):
-          sensorNames.append(Name(i, 'B'))
-          if B[i] == 1:
-            BeaconSensor_Names.append(Name(i,'B'))
-            BeaconSensor_Message.append('ON')
-          if previous_B != None:
-            if B[i] == 0 and previous_B[i] == 1: 
-              BeaconSensor_Names.append(Name(i,'B'))
-              BeaconSensor_Message.append('OFF')
-        previous_B = B
+          for i in range(len(M)):
+                sensorNames.append(Name(i, 'M'))
+                if M[i] == 1:
+                      if (previous_M != None):
+                        if (previous_M[i] == 0):
+                          MotionSensor_Names.append(Name(i,'M'))
+                          MotionSensor_Message.append('ON')
 
+                      else:
+                        MotionSensor_Names.append(Name(i,'M'))
+                        MotionSensor_Message.append('ON')
+
+                if previous_M != None:
+                      if M[i] == 0 and previous_M[i] == 1:
+                        MotionSensor_Names.append(Name(i,'M'))
+                        MotionSensor_Message.append('OFF')
+
+          previous_M = M
+          
       except:
         pass
+    
+      try:
+          for i in range(len(I)):
+            sensorNames.append(Name(i, 'IS'))
+            if I[i] == 1:
+                  if (previous_I != None):
+                    if (previous_I[i] == 0):
+                      ISSensor_Names.append(Name(i,'IS'))
+                      ISSensor_Message.append('ON')
+
+                  else:
+                    ISSensor_Names.append(Name(i,'IS'))
+                    ISSensor_Message.append('ON')
+
+            if previous_I != None:
+                  if I[i] == 0 and previous_I[i] == 1:
+                    ISSensor_Names.append(Name(i,'IS'))
+                    ISSensor_Message.append('OFF')
+
+          previous_I = I
+
+      except:
+          pass 
+
+      '''
+      # Beacon Sensor
+      try:
+        for i in range(len(B)):
+              sensorNames.append(Name(i, 'B'))
+              if B[i] > -200:
+                    if (previous_B != None):
+                        if (previous_B[i] == 0):
+                          BeaconSensor_Names.append(Name(i,'B'))
+                          if B[i] >= -50:
+                              BeaconSensor_Message.append('1')
+                            
+                          elif B[i] < -50:
+                              BeaconSensor_Message.append('0.5')
+
+
+                    else:
+                        BeaconSensor_Names.append(Name(i,'B'))
+                        if B[i] >= -50:
+                           BeaconSensor_Message.append('1')
+                        
+                        elif B[i] < -50:
+                           BeaconSensor_Message.append('0.5')
+
+              if previous_B != None:
+                    if B[i] <= -200 and previous_B[i] > -200:
+                        BeaconSensor_Names.append(Name(i,'B'))
+                        BeaconSensor_Message.append('0')
+
+        previous_M = M
+        
+      except:
+        pass
+       '''
+    
+    
+       
 
       for m in range(len(MotionSensor_Names)):
         output_file.append(time +' '+ MotionSensor_Names[m] + ' ' + MotionSensor_Names[m] + ' ' + MotionSensor_Message[m] + ' ' + Activity)
         
+      ''' 
+      for b in range(len(BeaconSensor_Names)):
+        output_file.append(time +' '+ BeaconSensor_Names[b] + ' ' + BeaconSensor_Names[b] + ' ' + BeaconSensor_Message[b] + ' ' + Activity)
+      '''
+    
+      for i_s in range(len(ISSensor_Names)):
+        output_file.append(time +' '+ ISSensor_Names[i_s] + ' ' + ISSensor_Names[i_s] + ' ' + ISSensor_Message[i_s] + ' ' + Activity)
+        
       for s in sensorNames:
           sensors.add(s)
-
+    
+    # for row in output_file:
+    #     print(row)
+    
+    
     return output_file, list(sensors)
 
 #returns the name of the sensor
@@ -273,7 +368,7 @@ def MakeDataBoundaries(height = 10.5, width = 6.6, MaxSensors = 15):
 
     return d
 
-def black_box_function(sample, simulateMotionSensors = True, simulateEstimotes = False, Plotting = False):       
+def black_box_function(sample, simulateMotionSensors = True, simulateEstimotes = False, simulateIS = False, Plotting = False):        
     files = []
     all_sensors = set([])
 
@@ -283,7 +378,8 @@ def black_box_function(sample, simulateMotionSensors = True, simulateEstimotes =
                                    agentTrace,
                                    sample.GetSensorConfiguration(), 
                                    simulateMotionSensors, 
-                                   simulateEstimotes, 
+                                   simulateEstimotes,
+                                   simulateIS,
                                    Plotting, 
                                    BOV.Data_path)
         
@@ -302,7 +398,7 @@ def black_box_function(sample, simulateMotionSensors = True, simulateEstimotes =
     except:
         return f1_score
     
-    
+'''    
 def calculate_confusion_matrix(sample, simulateMotionSensors = True, simulateEstimotes = False, Plotting = False):       
     files = []
     all_sensors = set([])
@@ -325,41 +421,43 @@ def calculate_confusion_matrix(sample, simulateMotionSensors = True, simulateEst
     
     return al.get_confusion_matrix(files, all_sensors)
    
-
+'''
 def function_to_be_optimized(config):
     sensorPositions = []
+    sensorTypes = []
     sensor_xy = []
-    
     excluded = []
-
-    for i in range(1, CONSTANTS['max_sensors'] + 1):
-        if multi_objective_flag == True:
-            if (config['x' + str(i)] > 0):
-                sensor_xy.append(config['x' + str(i)] * CONSTANTS['epsilon'])
-                sensor_xy.append(config['y' + str(i)] * CONSTANTS['epsilon'])
-                sensorPositions.append(sensor_xy)
-                
-                sensor_xy = []
-                
-            else:
-                sensor_xy.append(config['x' + str(i)] * CONSTANTS['epsilon'])
-                sensor_xy.append(config['y' + str(i)] * CONSTANTS['epsilon'])
-                excluded.append(sensor_xy)
-                
-                sensor_xy = []
-
-                
-        else:
+    
+    if (LSsensorTypesNum > 0):
+        for i in range(1, CONSTANTS['max_LS_sensors'] + 1):
             sensor_xy.append(config['x' + str(i)] * CONSTANTS['epsilon'])
             sensor_xy.append(config['y' + str(i)] * CONSTANTS['epsilon'])
+            sensorTypes.append(config['t' + str(i)])
+            sensorPositions.append(sensor_xy)
+            sensor_xy = []
+            
+    
+    if (ISsensorTypesNum > 0):
+        for i in range(1, CONSTANTS['max_IS_sensors'] + 1):
+            object_location = config['object_location' + str(i)].split(',')
+            sensor_xy.append(float(object_location[0]))
+            sensor_xy.append(float(object_location[1]))
+            sensorTypes.append(config['t_o' + str(i)])
             sensorPositions.append(sensor_xy)
             sensor_xy = []
 
-    data = Data(sensorPositions, BOV.space, CONSTANTS['epsilon'])
+    data = Data(sensorPositions, sensorTypes, BOV.space, CONSTANTS['epsilon'])
             
-    return black_box_function(data)
+    return 100 - black_box_function(data, 
+                                    simulateMotionSensors = sensor_types['model_motion_sensor'],
+                                    simulateEstimotes = sensor_types['model_beacon_sensor'],
+                                    simulateIS = (sensor_types['model_pressure_sensor'] and
+                                                  sensor_types['model_accelerometer'] and
+                                                  sensor_types['model_electricity_sensor'])
+                                   )
 
 
+'''
     
 def confusion_matrix(config):
     sensorPositions = []
@@ -437,33 +535,49 @@ def get_confusion_matrix(config,
                       )
     
     return confusion_matrix(config)
-    
+'''
 
 def run(config,
         run_on_colab = False, 
         epsilon = 1, # The distance between two nodes in the space grid:
-        maxSensorNum = 15,  # max sensor numbers
+        LSmaxSensorNum = 15,  # max location sensitive sensor numbers
+        ISmaxSensorNum = 10,  # max location sensitive sensor numbers
         radius = 1, # radius of the motion sensors
         print_epochs = True,
         height = 8.0,
         width = 8.0,
-        ROS = False
+        ROS = False,
+        input_sensor_types = {'model_motion_sensor': True, 
+                              'model_beacon_sensor': False,
+                              'model_pressure_sensor': False,
+                              'model_accelerometer': False,
+                              'model_electricity_sensor': False},
       ):
 
     global multi_objective_flag
     global CONSTANTS
     global runningOnGoogleColab
+    global sensor_types
+    global LSsensorTypesNum
+    global ISsensorTypesNum
+    
     runningOnGoogleColab = run_on_colab
     multi_objective_flag = False
+    
     CONSTANTS = {
         'initial_samples': 10,
         'epsilon': epsilon,
         'radius': radius,
         'height': height,
         'width': width,
-        'max_sensors': maxSensorNum
+        'max_LS_sensors': LSmaxSensorNum,
+        'max_IS_sensors': ISmaxSensorNum
     }
 
+    sensor_types = input_sensor_types
+    LSsensorTypesNum = sum(1 for condition in list(input_sensor_types.values())[0:2] if condition)
+    ISsensorTypesNum = sum(1 for condition in list(input_sensor_types.values())[2:5] if condition)
+    
     if (runningOnGoogleColab == True):
         from google.colab import drive    
         drive.mount('/content/gdrive', force_remount=True)
@@ -481,27 +595,24 @@ def run(config,
     dataBoundaries = MakeDataBoundaries(
                                         height = CONSTANTS['height'], 
                                         width = CONSTANTS['width'], 
-                                        MaxSensors = CONSTANTS['max_sensors']
+                                        MaxSensors = CONSTANTS['max_LS_sensors']
                                        )
 
     global BOV
     BOV =  BOVariables(
                        Data_path, 
                        CONSTANTS['epsilon'], 
-                       CONSTANTS['max_sensors'], 
-                       CONSTANTS['max_sensors'], 
+                       CONSTANTS['initial_samples'],
+                       CONSTANTS['max_LS_sensors'], 
+                       CONSTANTS['max_IS_sensors'], 
                        CONSTANTS['radius'],
                        CONSTANTS['initial_samples'],
                        ROS = True
                       )
 
-    from openbox import sp
+    # from openbox import sp
     
-
     # Define Search Space
-    space = sp.Space()
-
-    
+    # space = sp.Space()
     history = function_to_be_optimized(config)
-    
     return history
