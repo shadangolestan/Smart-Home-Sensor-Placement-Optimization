@@ -92,8 +92,6 @@ class Chromosome:
 
         configurationDetails = []
 
-
-
         for index, loc in enumerate(sensorLocations):
             if (sensorTypes[index] == 1):
                 configurationDetails.append(tuple([loc, 'kitchen', 'motion sensors']))
