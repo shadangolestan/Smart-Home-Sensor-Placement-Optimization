@@ -19,10 +19,51 @@ import CASAS.al as al
 import pickle
 
 class Chromosome:
-    def __init__(self, *args, sensorTypesNum):
+    def __init__(self, 
+                 grid = None, 
+                 mode = None, 
+                 space = None, 
+                 initSensorNum = 10, 
+                 epsilon = 0.5, 
+                 new = True,
+                 sensorTypesNum = 1,
+                 greedy = True,
+                 counter = 1,
+                 chromosome_pointer = 0):
+        
+        self.sensitivity = {'3': 'pressure',
+                            '4': 'accelerometer',
+                            '5': 'electricity'}
+        
         self.sensorTypesNum = sensorTypesNum
         self.radius = 1
-        if len(args) < 5:
+        self.mode = mode
+        self.epsilon = epsilon
+        self.initSensorNum = initSensorNum
+        self.space = space
+        self.placeHolders = []
+        self.fitness = -1
+        self.SensorPlaceHolderSetup()
+        self.chromosome_pointer = chromosome_pointer
+        
+        if greedy:
+            if new:
+                self.GreedySensorConfigurationSetup(counter)
+            else:
+                self.grid = grid
+            
+        else:
+            if new:
+                self.SensorConfigurationSetup()
+            else:
+                self.grid = grid
+            
+    '''
+    def __init__(self, *args, new = False, sensorTypesNum = 1, greedy = False, counter = 1):
+        if greedy:
+            print(greedy)
+            self.sensorTypesNum = sensorTypesNum
+            self.radius = 1
             self.epsilon = args[3]
             self.initSensorNum = args[2]
             self.mode = args[0]
@@ -30,20 +71,39 @@ class Chromosome:
             self.placeHolders = []
             self.fitness = -1
             self.SensorPlaceHolderSetup()
-            self.SensorConfigurationSetup()
-              
-        elif len(args) == 5:
-            self.epsilon = args[3]
-            self.placeHolders = []
-            self.fitness = -1
-            self.grid = args[0]
-            self.mode = args[1]
-            self.space = args[2]
-            self.SensorPlaceHolderSetup()
-            
-        self.sensitivity = {'3': 'pressure',
-                            '4': 'accelerometer',
-                            '5': 'electricity'}
+            self.GreedySensorConfigurationSetup(counter)
+
+        else:
+            self.sensorTypesNum = sensorTypesNum
+            self.radius = 1
+            if new:
+                print(greedy, ' new')
+                self.epsilon = args[3]
+                self.initSensorNum = args[2]
+                self.mode = args[0]
+                self.space = args[1]
+                self.placeHolders = []
+                self.fitness = -1
+                self.SensorPlaceHolderSetup()
+                self.SensorConfigurationSetup()
+
+            elif new == False:
+                print(greedy, ' old')
+                self.epsilon = args[3]
+                self.placeHolders = []
+                self.fitness = -1
+                self.grid = args[0]
+                self.mode = args[1]
+                self.space = args[2]
+                self.SensorPlaceHolderSetup()
+                
+                print('Grid:', self.grid)
+                print('mode:', self.mode)
+                print('space:', self.space)
+                print('epsilon:', self.epsilon)
+                print('sensorTypesNum:', self.sensorTypesNum)
+                print('radius:', self.radius)            
+    '''
         
     def frange(self, start, stop, step):
         steps = []
@@ -75,8 +135,14 @@ class Chromosome:
           for y in Ys:
             self.placeHolders.append([x, y])
 
+    def GreedySensorConfigurationSetup(self, counter):
+        Xs = self.frange(self.epsilon, self.space[0], self.epsilon)
+        Ys = self.frange(self.epsilon, self.space[1], self.epsilon)
+        self.grid = np.zeros(len(Xs) * len(Ys)).tolist()
+        cell = counter
+        self.grid[cell] = 1
+            
     def SensorConfigurationSetup(self):
-        
         Xs = self.frange(self.epsilon, self.space[0], self.epsilon)
         Ys = self.frange(self.epsilon, self.space[1], self.epsilon)
         self.grid = np.zeros(len(Xs) * len(Ys)).tolist()
@@ -147,7 +213,6 @@ class Chromosome:
         sensor_config = [[configurationSummary, [tuple(configurationDetails)]], self.radius]
         
         # print(sensor_config)
-        
         return sensor_config
 
 
@@ -160,11 +225,12 @@ class Chromosome:
                 sensorTypes.append(sensorIndicator)
 
         return sensorLocations, sensorTypes
-
-
-class SA:
+    
+class GreedyAndLocalSearch:
     chromosomes = []
     def __init__(self, population, initializationMethod, Data_path, epsilon, initSensorNum, maxSensorNum, radius, ROS, learning_rate, sensorTypesNum):
+        self.results = []
+        self.best_configuration_history = []
         self.population = population
         self.mode = initializationMethod
         self.Data_path = Data_path
@@ -178,28 +244,163 @@ class SA:
         self.sensor_distribution, self.types, self.space, self.rooms, self.agentTraces = self.ModelsInitializations(ROS)
         
         for i in range(population):
-            self.chromosomes.append(Chromosome(self.mode, self.space, self.initSensorNum, self.epsilon, sensorTypesNum = self.sensorTypesNum))
+            self.chromosomes.append(Chromosome(grid = None,
+                                               mode = self.mode,
+                                               space = self.space,
+                                               initSensorNum = self.initSensorNum,
+                                               epsilon = self.epsilon,
+                                               new = True,
+                                               sensorTypesNum = self.sensorTypesNum,
+                                               greedy = True,
+                                               counter = i,
+                                               chromosome_pointer = i))
           
+    def sortChromosomes(self, chroms):
+        chroms.sort(key=lambda x: x.fitness, reverse=True)
+   
+    def RunGreedyAlgorithm(self):
+        '''
+        self.RunFitnessFunction(self.chromosomes, True, False, False, False, 1)
+        self.sortChromosomes()
+        
+        grid = self.chromosomes[0].grid
+        self.current_configs = [Chromosome(grid = grid,
+                                       mode = self.chromosomes[0].mode,
+                                       space = self.chromosomes[0].space,
+                                       initSensorNum = self.initSensorNum,
+                                       epsilon = self.epsilon,
+                                       new = False,
+                                       sensorTypesNum = self.sensorTypesNum,
+                                       greedy = True,
+                                       counter = 1)]
+        
+        self.RunFitnessFunction(self.current_configs, True, False, False, False, 1)
+        
+        picked_sensors = 1
+        
+        for i in range(1, len(self.chromosomes)):
+            new_grid = []
+            new_grid = [int(x + y) for x, y in zip(grid, self.chromosomes[i].grid)]
+            
+            self.test_configs = [Chromosome(grid = new_grid,
+                                       mode = self.chromosomes[0].mode,
+                                       space = self.chromosomes[0].space,
+                                       initSensorNum = self.initSensorNum,
+                                       epsilon = self.epsilon,
+                                       new = False,
+                                       sensorTypesNum = self.sensorTypesNum,
+                                       greedy = True,
+                                       counter = 1)]
+            
+            self.RunFitnessFunction(self.test_configs, True, False, False, False, 1)
+            
+            if (self.test_configs[0].fitness > self.current_configs[0].fitness):
+                grid = copy.deepcopy(new_grid)
+                self.current_configs = copy.deepcopy(self.test_configs)
+                picked_sensors = picked_sensors + 1
+                
+                if picked_sensors >= self.maxSensorNum:
+                    break  
+        
+        self.GreedyOutput = [Chromosome(grid = copy.deepcopy(grid),
+                                        mode = self.chromosomes[0].mode,
+                                        space = self.chromosomes[0].space,
+                                        initSensorNum = self.initSensorNum,
+                                        epsilon = self.epsilon,
+                                        new = False,
+                                        sensorTypesNum = self.sensorTypesNum,
+                                        greedy = True,
+                                        counter = 1)]
+                                        
+                                        '''
+        picked_sensors = 1
+        self.RunFitnessFunction(self.chromosomes, True, False, False, False, 1)        
+        self.sortChromosomes(self.chromosomes)
+        
+        self.results.append([(c.fitness, sum(c.grid)) for c in self.chromosomes])
+        self.best_configuration_history.append(self.chromosomes[0])
+        
+        grid = self.chromosomes[0].grid
+        self.current_configs = [Chromosome(grid = grid,
+                                       mode = self.chromosomes[0].mode,
+                                       space = self.chromosomes[0].space,
+                                       initSensorNum = self.initSensorNum,
+                                       epsilon = self.epsilon,
+                                       new = False,
+                                       sensorTypesNum = self.sensorTypesNum,
+                                       greedy = True,
+                                       counter = 1)]
+        
+        
+        while picked_sensors < self.maxSensorNum:   
+            self.test_configs = []
+            for i in range(1, len(self.chromosomes)):
+                new_grid = []
+                new_grid = [int(x + y) for x, y in zip(grid, self.chromosomes[i].grid)]
+
+                self.test_configs.append(Chromosome(grid = new_grid,
+                                           mode = self.chromosomes[0].mode,
+                                           space = self.chromosomes[0].space,
+                                           initSensorNum = self.initSensorNum,
+                                           epsilon = self.epsilon,
+                                           new = False,
+                                           sensorTypesNum = self.sensorTypesNum,
+                                           greedy = True,
+                                           counter = 1,
+                                           chromosome_pointer = self.chromosomes[i].chromosome_pointer))
+
+            
+            self.RunFitnessFunction(self.test_configs, True, False, False, False, 1)            
+            self.sortChromosomes(self.test_configs)
+            
+            self.results.append([(c.fitness, sum(c.grid)) for c in self.test_configs])
+            self.best_configuration_history.append(self.test_configs[0])
+
+            grid = self.test_configs[0].grid
+            
+            self.chromosomes = list(filter(lambda x: x.chromosome_pointer != self.test_configs[0].chromosome_pointer, self.chromosomes)) 
+            
+            picked_sensors = picked_sensors + 1
+
+                             
+        self.GreedyOutput = [Chromosome(grid = copy.deepcopy(grid),
+                                        mode = self.chromosomes[0].mode,
+                                        space = self.chromosomes[0].space,
+                                        initSensorNum = self.initSensorNum,
+                                        epsilon = self.epsilon,
+                                        new = False,
+                                        sensorTypesNum = self.sensorTypesNum,
+                                        greedy = True,
+                                        counter = 1)]
+        
+        
     def GetNextGeneration(self, epoch):
         import copy 
         
         self.newConfigs = []
-        self.newConfigs = copy.deepcopy(self.chromosomes)
+        self.newConfigs = copy.deepcopy(self.GreedyOutput)
         # self.newConfigs.append(copy.copy(self.chromosomes[0]))
         
         for config in self.newConfigs:
             config.GoToNeighbour()
         
-        self.RunFitnessFunction(self.chromosomes, True, False, False, False, 1)
+        # self.RunFitnessFunction(self.GreedyOutput, True, False, False, False, 1)
         self.RunFitnessFunction(self.newConfigs, True, False, False, False, 1)
         
-        if self.newConfigs[0].fitness > self.chromosomes[0].fitness:
-            self.chromosomes = copy.deepcopy(self.newConfigs)
+        self.results.append([(c.fitness, sum(c.grid)) for c in self.newConfigs])
+        
+        if self.newConfigs[0].fitness > self.GreedyOutput[0].fitness:
+            self.GreedyOutput = copy.deepcopy(self.newConfigs)
+            self.best_configuration_history.append(self.newConfigs[0])
             
         else:
             prob = random.uniform(0, 1)
             if prob <= self.learning_rate:
-                self.chromosomes = copy.deepcopy(self.newConfigs)
+                self.GreedyOutput = copy.deepcopy(self.newConfigs)
+                self.best_configuration_history.append(self.newConfigs[0])
+                
+            else:
+                self.best_configuration_history.append(self.GreedyOutput)
                 
         self.learning_rate = self.learning_rate / (epoch + 1)
 
@@ -232,7 +433,6 @@ class SA:
         A.sort()
         space = [A[-1], A[-2]]
 
-        # print(space)
 
         # User parameters 
         types, sensor_distribution = pf.GetUsersParameters()
@@ -243,10 +443,10 @@ class SA:
               
         return sensor_distribution, types, space, rooms, agentTraces
 
-    def RunFitnessFunction(self, chroms, simulateMotionSensors, simulateEstimotes, simulateIS, Plotting, iteration):       
+    def RunFitnessFunction(self, chroms, simulateMotionSensors, simulateEstimotes, simulateIS, Plotting, iteration):
         for index, chromosome in enumerate(chroms):
             files = []
-
+            
             all_sensors = set([])
 
             for agentTrace in self.agentTraces:
@@ -267,10 +467,23 @@ class SA:
                 files.append(dataFile)    
 
             all_sensors = list(all_sensors)
-
-            chromosome.fitness = (al.leave_one_out(files, all_sensors)[0]) * 100
+            
+            fitness = al.leave_one_out(files, all_sensors)
+            CONSTANTS['iterations'] = CONSTANTS['iterations'] - 1
+            
+            try:
+                if len(fitness[0]) > 1:
+                    fitness = fitness[0]
+            except:
+                pass
+            
+                    
+            chromosome.fitness = fitness[0] * 100
+            
             if chromosome.fitness < 0:
                 chromosome.fitness = 0
+                
+                
 
     def frange(self, start, stop, step):
         steps = []
@@ -330,7 +543,7 @@ class SA:
         previous_I = None
 
         output_file = []
-
+        
         for index, row in df.iterrows():
           T = row['time']
           M = row['motion sensors']
@@ -361,7 +574,7 @@ class SA:
 
 
           # Motion Sensor
-          
+          #print(len(M))
           for i in range(len(M)):
                 sensorNames.append(self.Name(i, 'M'))
                 if M[i] == 1:
@@ -533,34 +746,40 @@ def run(run_on_colab = False,
     # f = IntProgress(min=0, max=iteration) # instantiate the bar
     # display(f) # display the bar
     
-    sa = SA(1, 
-            'expert', 
-            Data_path, 
-            epsilon, 
-            CONSTANTS['max_LS_sensors'], 
-            CONSTANTS['max_LS_sensors'], 
-            radius, 
-            ROS,
-            learning_rate,
-            LSsensorTypesNum + ISsensorTypesNum)
+    population = int((CONSTANTS['height'] / epsilon) * (CONSTANTS['width'] / epsilon))
+    
+    GLS = GreedyAndLocalSearch(population, 
+                               'expert', 
+                               Data_path, 
+                               epsilon, 
+                               CONSTANTS['max_LS_sensors'], 
+                               CONSTANTS['max_LS_sensors'], 
+                               radius, 
+                               ROS,
+                               learning_rate,
+                               LSsensorTypesNum + ISsensorTypesNum)
     
     # sa.RunFitnessFunction(True, False, False, 1)
-
-    for epoch in range(iteration):
-            print(epoch)
-            # f.value += 1
-            print('getting the next generation')
-            sa.GetNextGeneration(epoch)
-            # sa.RunFitnessFunction(True, False, False, 1)
-            # sa.Selection()
-            
+    
+    print('Running Greedy Algorithm...', end='')
+    GLS.RunGreedyAlgorithm()
+    print('[Done!]')
+    
+    GLS.RunFitnessFunction(GLS.GreedyOutput, True, False, False, False, 1)
+    print('number of sensors:', sum(GLS.GreedyOutput[0].grid))
+    print('remaining queries:', CONSTANTS['iterations'])
+    
+    for epoch in range(CONSTANTS['iterations']):
+    # while epoch < GLS.QueryNumber
+            GLS.GetNextGeneration(epoch)
             if (print_epochs == True):
                 print("(epoch %d) ----- The best answer: {%f} with (%d) number of sensors" 
                       %(epoch + 1, 
-                        sa.chromosomes[0].fitness,  
-                        np.sum(sa.chromosomes[0].grid)))
+                        GLS.GreedyOutput[0].fitness,  
+                        np.sum(GLS.GreedyOutput[0].grid)))
 
-            results.append([(c.fitness + (sum(c.grid) / 100) * 100, sum(c.grid)) for c in sa.chromosomes])
-            best_configuration_history.append(sa.chromosomes[0])
+            GLS.results.append([(c.fitness, sum(c.grid)) for c in GLS.GreedyOutput])
+            GLS.best_configuration_history.append(GLS.GreedyOutput[0])
+            epoch = epoch + 1
             
-    return results, best_configuration_history
+    return GLS.results, GLS.best_configuration_history

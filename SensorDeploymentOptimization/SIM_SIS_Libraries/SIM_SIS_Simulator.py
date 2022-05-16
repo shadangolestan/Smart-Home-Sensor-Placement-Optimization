@@ -139,7 +139,7 @@ def InitializeDataset(sensorTypes, FDN, simulateMotionSensors, simulateEstimotes
             motionNumbers = sensorsTypes[[a[0] for a in sensorsTypes].index('motion sensors')][1]
         except:
             motionNumbers = 0
-
+            
         sensor_bins = [0] * motionNumbers        
         simulated_sensor_readings = [sensor_bins] * len(df_)
     
@@ -532,6 +532,5 @@ def RunSimulator(space, Rooms, agentTrace, sensorsConfiguration, simulateMotionS
         RunSimulation(FDN, simulateMotionSensors, simulateEstimotes, simulateISSensors)
         
     CreateUltimateDataset(UDN, Epoch)
-    
     
     return df_
