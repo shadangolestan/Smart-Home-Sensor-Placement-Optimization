@@ -107,7 +107,7 @@ class Chromosome:
         
     def frange(self, start, stop, step):
         steps = []
-        while start <= stop:
+        while start < stop:
             steps.append(start)
             start +=step
             
@@ -134,6 +134,8 @@ class Chromosome:
         for x in Xs:
           for y in Ys:
             self.placeHolders.append([x, y])
+            
+        print(self.placeHolders)
 
     def GreedySensorConfigurationSetup(self, counter):
         Xs = self.frange(self.epsilon, self.space[0], self.epsilon)
@@ -402,7 +404,7 @@ class GreedyAndLocalSearch:
             else:
                 self.best_configuration_history.append(self.GreedyOutput)
                 
-        self.learning_rate = self.learning_rate / (epoch + 1)
+        self.learning_rate = self.learning_rate / np.sqrt(epoch + 1)
 
     def ModelsInitializations(self, ROS):
         #----- Space and agent models -----: 
@@ -769,6 +771,7 @@ def run(run_on_colab = False,
     print('number of sensors:', sum(GLS.GreedyOutput[0].grid))
     print('remaining queries:', CONSTANTS['iterations'])
     
+    '''
     for epoch in range(CONSTANTS['iterations']):
     # while epoch < GLS.QueryNumber
             GLS.GetNextGeneration(epoch)
@@ -781,5 +784,5 @@ def run(run_on_colab = False,
             GLS.results.append([(c.fitness, sum(c.grid)) for c in GLS.GreedyOutput])
             GLS.best_configuration_history.append(GLS.GreedyOutput[0])
             epoch = epoch + 1
-            
+    '''
     return GLS.results, GLS.best_configuration_history

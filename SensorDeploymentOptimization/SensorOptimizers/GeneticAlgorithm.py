@@ -56,9 +56,10 @@ class Chromosome:
         for x in Xs:
           for y in Ys:
             self.placeHolders.append([x, y])
+            
+        print(self.placeHolders)
 
     def SensorConfigurationSetup(self):
-        
         Xs = self.frange(self.epsilon, self.space[0], self.epsilon)
         Ys = self.frange(self.epsilon, self.space[1], self.epsilon)
         self.grid = np.zeros(len(Xs) * len(Ys)).tolist()

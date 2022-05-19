@@ -11,15 +11,37 @@ def plot_convergence(
         
     losses = list(results)
     n_calls = len(losses)
-    iterations = range(1, n_calls + 1)
+    # iterations = range(1, n_calls + 1)
+    iterations = range(1, 1001)
     maxs = [np.max(losses[:i]) for i in iterations]
+    
+    print('len(maxs) 1', len(maxs))
+    
+    compensation = 1000 - len(maxs)
+    
+    for i in range(compensation):
+            maxs.append(maxs[len(maxs) - 1])
+    
+    print('len(maxs) 2', len(maxs))
+    
     min_maxs = min(maxs)
     cliped_losses = np.clip(losses, min_maxs, None)
     
     if plotDataPoints:
         cliped_losses = np.clip(losses, min_maxs, None)
+        compensation = 1000 - len(cliped_losses)
+        cliped_losses = list(cliped_losses)
+
+        for i in range(compensation):
+                cliped_losses.append(None)
+
+        cliped_losses = np.array(cliped_losses)
+        
     else:
         cliped_losses = None
+        
+        
+    
     
     return plotter(iterations, maxs, cliped_losses, xlabel, ylabel, ax, name, alpha, yscale, color,
                             true_minimum, **kwargs)
