@@ -636,6 +636,7 @@ def BuildConfigurationSearchSpace(initial_state):
 def run(surrogate_type = 'prf',
         # acq_optimizer_type = 'random_scipy',
         acq_optimizer_type = 'local_random',
+        acquisition_function = 'ei',
         task_id = 'SPO',
         run_on_colab = False, 
         iteration = 1000, 
@@ -726,119 +727,11 @@ def run(surrogate_type = 'prf',
             max_runs = CONSTANTS['iterations'],
             surrogate_type = surrogate_type,
             acq_optimizer_type = acq_optimizer_type,
+            acq_type = acquisition_function,
             time_limit_per_trial=31000,
             task_id = task_id,
         )
         history = opt.run()
             
-    '''
-    else:
-        list_of_variables = []
-        for i in range(1, CONSTANTS['max_sensors'] + 1):
-            x = sp.Int("x" + str(i), 0, int((CONSTANTS['width'] - 1) / CONSTANTS['epsilon']), default_value=1)
-            y = sp.Int("y" + str(i), 1, int((CONSTANTS['height'] - 1) / CONSTANTS['epsilon']), default_value=1)
-            list_of_variables.append(x)
-            list_of_variables.append(y)
-
-        space.add_variables(list_of_variables)
-
-        history_list = []
-
-        opt = Optimizer(
-            function_to_be_optimized,
-            space,
-            max_runs = CONSTANTS['iterations'],
-            surrogate_type = surrogate_type,
-            acq_optimizer_type = acq_optimizer_type,
-            time_limit_per_trial=31000,
-            task_id = task_id,
-        )
-        history = opt.run()
-    '''
     
     return history
-                         
-                         
-                         
-                         
-                         
-                         
-'''
-def confusion_matrix(config):
-    sensorPositions = []
-    sensor_xy = []
-    excluded = []
-
-    for i in range(1, len(config.keys()) + 1):
-        try:
-            sensor_xy.append(config['x' + str(i)] * CONSTANTS['epsilon'])
-            sensor_xy.append(config['y' + str(i)] * CONSTANTS['epsilon'])
-            sensorPositions.append(sensor_xy)
-            sensor_xy = []
-
-        except:
-            pass
-        
-    data = Data(sensorPositions, BOV.space, CONSTANTS['epsilon'])
-    return calculate_confusion_matrix(data)
- 
-    
-def get_confusion_matrix(config, 
-                         run_on_colab = False,
-                         epsilon = 1,
-                         radius = 1,
-                         print_epochs = True,
-                         height = 8.0,
-                         width = 8.0,
-                         ROS = False,
-                         multi_objective = False):
-    
-    global multi_objective_flag
-    global CONSTANTS
-    global runningOnGoogleColab
-    runningOnGoogleColab = run_on_colab
-    multi_objective_flag = multi_objective
-    CONSTANTS = {
-        'iterations': 1000,
-        'initial_samples': 10,
-        'epsilon': epsilon,
-        'radius': radius,
-        'height': height,
-        'width': width,
-        'max_sensors': 15
-    }
-
-    if (runningOnGoogleColab == True):
-        from google.colab import drive    
-        drive.mount('/content/gdrive', force_remount=True)
-        Data_path = 'gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/'
-        sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/')
-
-    else:
-        Data_path = '../SensorDeploymentOptimization/'
-        sys.path.append('..')
-
-    finalResults = []
-    w = CONSTANTS['width'] - 0.5
-    h = CONSTANTS['height'] - 0.5
-
-    dataBoundaries = MakeDataBoundaries(
-                                        height = CONSTANTS['height'], 
-                                        width = CONSTANTS['width'], 
-                                        MaxSensors = 15
-                                       )
-
-    global BOV
-    BOV =  BOVariables(
-                       Data_path, 
-                       CONSTANTS['epsilon'], 
-                       15, 
-                       15, 
-                       CONSTANTS['radius'],
-                       CONSTANTS['initial_samples'],
-                       ROS = True
-                      )
-    
-    return confusion_matrix(config)
-'''    
-
