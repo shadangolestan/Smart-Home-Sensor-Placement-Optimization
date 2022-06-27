@@ -53,17 +53,21 @@ class Observation(object):
                + (", elapsed_time=%s" % self.elapsed_time if self.elapsed_time is not None else "") \
                + ")"
 
-
-
-
-
-def build_acq_func(func_str='ei', model=None, constraint_models=None, **kwargs):
+def build_acq_func(func_str='ei', model=None, constraint_models=None, epsilon = None, error = None, **kwargs):
     func_str = func_str.lower()
     acq_func = acq_dict.get(func_str)
     if acq_func is None:
         raise ValueError('Invalid string %s for acquisition function!' % func_str)
     if constraint_models is None:
-        return acq_func(model=model, **kwargs)
+        if (func_str == 'kg'):
+            if epsilon is None or error is None:
+                raise ValueError('KG Acquisition Function needs epsilon and error inputs.')
+            else:
+                return acq_func(model=model, epsilon = epsilon, error = error, **kwargs)
+        
+        else:
+            return acq_func(model=model, **kwargs)
+        
     else:
         return acq_func(model=model, constraint_models=constraint_models, **kwargs)
 

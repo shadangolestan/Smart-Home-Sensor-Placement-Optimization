@@ -641,6 +641,7 @@ def run(surrogate_type = 'prf',
         run_on_colab = False, 
         iteration = 1000, 
         epsilon = 1, # The distance between two nodes in the space grid:
+        error = 0.25,
         LSmaxSensorNum = 15,  # max location sensitive sensor numbers
         ISmaxSensorNum = 10,  # max location sensitive sensor numbers
         radius = 1, # radius of the motion sensors
@@ -674,7 +675,8 @@ def run(surrogate_type = 'prf',
         'height': height,
         'width': width,
         'max_LS_sensors': LSmaxSensorNum,
-        'max_IS_sensors': ISmaxSensorNum
+        'max_IS_sensors': ISmaxSensorNum,
+        'error': error
     }
     
     sensor_types = input_sensor_types
@@ -715,6 +717,10 @@ def run(surrogate_type = 'prf',
     # Define Search Space
     space = sp.Space()
 
+    
+    print(CONSTANTS['width'])
+    print(CONSTANTS['height'])
+    
     if (multi_objective_flag == False):
         list_of_variables = BuildConfigurationSearchSpace(initial_state)
 
@@ -730,6 +736,8 @@ def run(surrogate_type = 'prf',
             acq_type = acquisition_function,
             time_limit_per_trial=31000,
             task_id = task_id,
+            epsilon = CONSTANTS['epsilon'],
+            error = CONSTANTS['error']
         )
         history = opt.run()
             

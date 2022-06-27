@@ -122,6 +122,8 @@ class KG(AbstractAcquisitionFunction):
                  model: AbstractModel,
                  par: float = 0.0,
                  num_fantasies: int = 64,
+                 epsilon = 1,
+                 error = 0.25,
                  **kwargs):
         """Constructor
 
@@ -145,7 +147,35 @@ class KG(AbstractAcquisitionFunction):
         self.par = par
         self.num_fantasies = num_fantasies
         self.eta = None
+        self.epsilon = epsilon
+        self.error = error
+        
 
+    def sigma_neighbours(self, x):        
+        num_sensors = int(len(x) / 3)
+        xx = x[num_sensors: num_sensors*2]
+        yy = x[num_sensors*2: num_sensors*3]
+
+        def clamp(num, min_value, max_value):
+           return max(min(num, max_value), min_value)
+
+        import random
+        import numpy as np
+        neighbours = 100
+        Ns = []
+        for i in range(neighbours):  
+            N = []
+            N_sensorType = [0]*num_sensors
+            N_x = []
+            N_y = []
+            for s in range(num_sensors):
+                N_x.append(clamp(xx[s] + (self.error * random.randint(-1,1)), 0 , 1))
+                N_y.append(clamp(yy[s] + (self.error * random.randint(-1,1)), 0, 1))
+            N = N_sensorType + N_x + N_y   
+            Ns.append(N)  
+            
+        return Ns
+        
     def _compute(self, X: np.ndarray, **kwargs):
         """Computes the KG value and its derivatives.
 
@@ -166,50 +196,64 @@ class KG(AbstractAcquisitionFunction):
         # TODO: New acquisition function definition:        
         if len(X.shape) == 1:
             X = X[:, np.newaxis]
-            
-        # for x in X:
-        #     print('Xs:', x[7:14])
-        #     print('Ys:', x[14:21])
-            
         
-            
-            
-            
-            
-            
-
-        m, v = self.model.predict_marginalized_over_instances(X)
-        s = np.sqrt(v)
-
-        if self.eta is None:
-            raise ValueError('No current best specified. Call update('
-                             'eta=<int>) to inform the acquisition function '
-                             'about the current best value.')
-
+        error = self.error
+                        
         def calculate_f():
             z = (self.eta - m - self.par) / s
-            return (self.eta - m - self.par) * norm.cdf(z) + s * norm.pdf(z)
+            return (self.eta - m - self.par) * norm.cdf(z) + s * norm.pdf(z)    
         
-        if np.any(s == 0.0):
-            # if std is zero, we have observed x on all instances
-            # using a RF, std should be never exactly 0.0
-            # Avoid zero division by setting all zeros in s to one.
-            # Consider the corresponding results in f to be zero.
-            self.logger.warning("Predicted std is 0.0 for at least one sample.")
-            s_copy = np.copy(s)
-            s[s_copy == 0.0] = 1.0
-            f = calculate_f()
-            f[s_copy == 0.0] = 0.0
+        f = []
+        for x in X:
+            Ns = self.sigma_neighbours(x)
+            # Ns.append(list(x))
+            # f_c = np.asarray(Ns)
+            m, v = self.model.predict_marginalized_over_instances(np.asarray(Ns))
+            s = np.sqrt(v)
+            neighbours = calculate_f()
             
-        else:
-            f = calculate_f()
             
-        if (f < 0).any():
+            # print(np.asarray([x]))
+            # print(np.asarray([x]).shape)
+            
+            m, v = self.model.predict_marginalized_over_instances(np.asarray([x]))
+            s = np.sqrt(v)
+            config = calculate_f()
+            
+            sigma = 0
+            for f_i in neighbours:
+                sigma += np.abs(config - f_i)
+                
+            f.append(config/(1 + sigma))
+            
+            '''
+            if self.eta is None:
+                raise ValueError('No current best specified. Call update('
+                                 'eta=<int>) to inform the acquisition function '
+                                 'about the current best value.')
+            
+            if np.any(s == 0.0):
+                # if std is zero, we have observed x on all instances
+                # using a RF, std should be never exactly 0.0
+                # Avoid zero division by setting all zeros in s to one.
+                # Consider the corresponding results in f to be zero.
+                self.logger.warning("Predicted std is 0.0 for at least one sample.")
+                s_copy = np.copy(s)
+                s[s_copy == 0.0] = 1.0
+                neighbours_f = calculate_f()
+                neighbours_f[s_copy == 0.0] = 0.0
+            
+            else:
+                neighbours_f = calculate_f()
+                
+            '''            
+        
+        if (np.asarray(f) < 0).any():
             raise ValueError(
                 "Expected Improvement is smaller than 0 for at least one "
                 "sample.")
-
-        return f
+        
+        return np.asarray(f)
         
         
 class EI(AbstractAcquisitionFunction):

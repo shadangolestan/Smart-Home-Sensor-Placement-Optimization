@@ -37,11 +37,15 @@ class Advisor(object, metaclass=abc.ABCMeta):
                  output_dir='logs',
                  task_id='default_task_id',
                  random_state=None,
+                 epsilon=None,
+                 error=None,
                  **kwargs):
 
         # Create output (logging) directory.
         # Init logging module.
         # Random seed generator.
+        self.epsilon = epsilon
+        self.error = error
         self.num_objs = num_objs
         self.num_constraints = num_constraints
         self.init_strategy = init_strategy
@@ -259,7 +263,10 @@ class Advisor(object, metaclass=abc.ABCMeta):
             self.acquisition_function = build_acq_func(func_str=self.acq_type,
                                                        model=self.surrogate_model,
                                                        constraint_models=self.constraint_models,
+                                                       epsilon = self.epsilon,
+                                                       error = self.error,
                                                        ref_point=self.ref_point)
+                
         if self.acq_type == 'usemo':
             self.acq_optimizer_type = 'usemo_optimizer'
         self.optimizer = build_optimizer(func_str=self.acq_optimizer_type,
@@ -348,8 +355,6 @@ class Advisor(object, metaclass=abc.ABCMeta):
             self.logger.info('Sample random config. rand_prob=%f.' % self.rand_prob)
             return self.sample_random_configs(1, history_container)[0]
         
-        #SHADAN
-        print('getting suggestion')
         X = convert_configurations_to_array(history_container.configurations)
         Y = history_container.get_transformed_perfs(transform=None)
         cY = history_container.get_transformed_constraint_perfs(transform='bilog')

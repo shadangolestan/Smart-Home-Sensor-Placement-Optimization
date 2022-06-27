@@ -115,9 +115,10 @@ class SMBO(BOBase):
                  task_id='default_task_id',
                  random_state=None,
                  advisor_kwargs: dict = None,
+                 epsilon = None,
+                 error = None,
                  **kwargs):
         
-        print('LOCAL BO')
 
         if task_id is None:
             raise ValueError('Task id is not SPECIFIED. Please input task id first.')
@@ -149,6 +150,8 @@ class SMBO(BOBase):
                                           task_id=task_id,
                                           output_dir=logging_dir,
                                           random_state=random_state,
+                                          epsilon = epsilon,
+                                          error = error,
                                           **advisor_kwargs)
         elif advisor_type == 'mcadvisor':
             from openbox.core.mc_advisor import MCAdvisor
