@@ -200,31 +200,55 @@ class KG(AbstractAcquisitionFunction):
         error = self.error
                         
         def calculate_f():
+            m = MUs
+            s = STDs
+            
+            # print('========')
+            # print(m)
+            # print('--------')
+            # print(s)
+            # print('========')
+            
             z = (self.eta - m - self.par) / s
             return (self.eta - m - self.par) * norm.cdf(z) + s * norm.pdf(z)    
         
+        MUs = []
+        STDs = []
         f = []
         for x in X:
             Ns = self.sigma_neighbours(x)
-            # Ns.append(list(x))
-            # f_c = np.asarray(Ns)
+            
             m, v = self.model.predict_marginalized_over_instances(np.asarray(Ns))
             s = np.sqrt(v)
-            neighbours = calculate_f()
+            # neighbours = calculate_f()
+            
+            m_c, v_c = self.model.predict_marginalized_over_instances(np.asarray([x]))
+            s_c = np.sqrt(v_c)
+            
+            sigma = 0
+            for i, f_i in enumerate(m):
+                sigma += np.abs(f_i - m_c)
             
             
-            # print(np.asarray([x]))
-            # print(np.asarray([x]).shape)
+              
+            avg = sigma / len(m)
             
-            m, v = self.model.predict_marginalized_over_instances(np.asarray([x]))
-            s = np.sqrt(v)
+            MUs.append(list((((avg + m_c) / 2) / (1 + sigma))[0]))
+            STDs.append(list(s_c[0]))
+            
+            '''
             config = calculate_f()
             
             sigma = 0
             for f_i in neighbours:
                 sigma += np.abs(config - f_i)
                 
-            f.append(config/(1 + sigma))
+            avg = sigma / len(neighbours)
+            
+                
+            f.append(((avg + config) / 2) / (1 + sigma))
+            
+            '''
             
             '''
             if self.eta is None:
@@ -247,6 +271,8 @@ class KG(AbstractAcquisitionFunction):
                 neighbours_f = calculate_f()
                 
             '''            
+        
+        f = calculate_f()
         
         if (np.asarray(f) < 0).any():
             raise ValueError(
