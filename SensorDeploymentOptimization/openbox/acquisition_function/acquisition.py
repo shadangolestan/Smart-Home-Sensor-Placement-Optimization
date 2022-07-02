@@ -225,16 +225,19 @@ class KG(AbstractAcquisitionFunction):
             m_c, v_c = self.model.predict_marginalized_over_instances(np.asarray([x]))
             s_c = np.sqrt(v_c)
             
-            sigma = 0
+            sigma_m = 0
+            sigma_s = 0
             for i, f_i in enumerate(m):
-                sigma += np.abs(f_i - m_c)
+                sigma_m += np.abs(f_i - m_c)
+                sigma_s += np.abs(s[i] - s_c)
             
+            avg_m = sigma_m / len(m)
+            avg_s = sigma_s / len(m)
             
-              
-            avg = sigma / len(m)
-            
-            MUs.append(list((((avg + m_c) / 2) / (1 + sigma))[0]))
-            STDs.append(list(s_c[0]))
+            MUs.append(list((((avg_m + m_c) / 2) / (1 + sigma_m))[0]))
+            STDs.append(list((((avg_s + s_c) / 2) / (1 + sigma_s))[0]))
+
+            # STDs.append(list(s_c[0]))
             
             '''
             config = calculate_f()
