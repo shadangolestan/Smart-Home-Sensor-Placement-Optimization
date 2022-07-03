@@ -212,6 +212,7 @@ class KG(AbstractAcquisitionFunction):
             z = (self.eta - m - self.par) / s
             return (self.eta - m - self.par) * norm.cdf(z) + s * norm.pdf(z)    
         
+
         MUs = []
         STDs = []
         f = []
