@@ -276,8 +276,8 @@ class BayesianOptimization:
     def MakeSensorCombinations(self, start, end, epsilon, sensorType, room):
         a1, b1 = self.makeBoundaries(epsilon, start[0], end[0])
         a2, b2 = self.makeBoundaries(epsilon, start[1], end[1])    
-        Xs = frange(a1, b1, epsilon)
-        Ys = frange(a2, b2, epsilon)
+        Xs = self.frange(a1, b1, epsilon)
+        Ys = self.frange(a2, b2, epsilon)
 
         points = list(itertools.product(list(itertools.product(Xs, Ys)), [room], [sensorType[0]])) 
         C = itertools.combinations(points, distribution[room][types.index(sensorType)])
@@ -488,10 +488,11 @@ class BayesianOptimization:
 
 
         for i in range(len(config_x)):
-            sensor_xy.append(config_x[i])
-            sensor_xy.append(config_y[i])
+            sensor_xy.append(config_x[i] * self.CONSTANTS['epsilon'])
+            sensor_xy.append(config_y[i] * self.CONSTANTS['epsilon'])
             sensorTypes.append(1)
             sensorPositions.append(sensor_xy)
+            sensor_xy = []
 
         '''
         if (LSsensorTypesNum > 0):
