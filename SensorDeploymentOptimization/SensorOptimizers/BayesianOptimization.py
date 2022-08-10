@@ -133,15 +133,9 @@ class BOVariables:
 
         # Parsing the space model: 
         space, rooms = pf.ParseWorld(simworldname)
-        sim_sis.AddRandomnessToDatasets(self.epsilon, self.data_path, rooms)
+        sim_sis.AddRandomnessToDatasets(self.epsilon, self.Data_path, rooms)
 
-        xs = []
-        for i in space:
-          for j in i:
-            xs.append(j)
-        A = list(set(xs))
-        A.sort()
-        space = [A[-1], A[-2]]
+        space = [space[-1][0], space[1][1]]
 
         # User parameters 
         types, sensor_distribution = pf.GetUsersParameters()
@@ -202,6 +196,20 @@ class BayesianOptimization:
         self.acquisition_function = acquisition_function
         self.task_id = task_id
         self.initial_state = initial_state
+
+
+        self.sensor_types = input_sensor_types
+        self.LSsensorTypesNum = sum(1 for condition in list(input_sensor_types.values())[0:2] if condition)
+        self.ISsensorTypesNum = sum(1 for condition in list(input_sensor_types.values())[2:5] if condition)
+
+        testbed
+        base_path = '../SensorDeploymentOptimization/'
+        sys.path.append('..')
+
+        # finalResults = []
+        # w = self.CONSTANTS['width'] - 0.5
+        # h = self.CONSTANTS['height'] - 0.5
+
         self.CONSTANTS = {
             'iterations': iteration,
             'initial_samples': 10,
@@ -214,23 +222,6 @@ class BayesianOptimization:
             'error': error
         }
 
-        self.sensor_types = input_sensor_types
-        self.LSsensorTypesNum = sum(1 for condition in list(input_sensor_types.values())[0:2] if condition)
-        self.ISsensorTypesNum = sum(1 for condition in list(input_sensor_types.values())[2:5] if condition)
-
-        testbed
-        base_path = '../SensorDeploymentOptimization/'
-        sys.path.append('..')
-
-        finalResults = []
-        w = self.CONSTANTS['width'] - 0.5
-        h = self.CONSTANTS['height'] - 0.5
-
-        self.dataBoundaries = self.MakeDataBoundaries(
-                                            height = self.CONSTANTS['height'], 
-                                            width = self.CONSTANTS['width'], 
-                                            MaxLSSensors = self.CONSTANTS['max_LS_sensors']
-                                           )
         self.BOV =  BOVariables(base_path, 
                                 self.testbed,
                                 self.CONSTANTS['epsilon'], 
@@ -240,6 +231,16 @@ class BayesianOptimization:
                                 self.CONSTANTS['radius'],
                                 self.CONSTANTS['initial_samples'],
                                 ROS = True)
+
+        self.CONSTANTS['width'] = self.BOV.space[0]
+        self.CONSTANTS['height'] = self.BOV.space[1]
+
+
+        self.dataBoundaries = self.MakeDataBoundaries(
+                                            height = self.CONSTANTS['height'], 
+                                            width = self.CONSTANTS['width'], 
+                                            MaxLSSensors = self.CONSTANTS['max_LS_sensors']
+                                           )
     
     def black_box_function(self, sample, simulateMotionSensors = True, simulateEstimotes = False, simulateIS = False, Plotting = False):       
         files = []

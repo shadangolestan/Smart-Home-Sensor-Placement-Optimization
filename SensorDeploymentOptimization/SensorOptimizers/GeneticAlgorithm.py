@@ -47,10 +47,14 @@ class Chromosome:
             
         return steps
 
-    def SensorPlaceHolderSetup(self):   
+    def SensorPlaceHolderSetup(self):  
+
+        # print(self.space)
+
         Xs = self.frange(self.epsilon, self.space[0], self.epsilon)
         Ys = self.frange(self.epsilon, self.space[1], self.epsilon)
         
+
         import matplotlib.pyplot as plt
         
         for x in Xs:
@@ -249,17 +253,8 @@ class GA:
                 else:
                     agentTraces.append(self.data_path + agent_trace_path + filename)
 
-        
+        space = [space[-1][0], space[1][1]]
 
-        xs = []
-        for i in space:
-          for j in i:
-            xs.append(j)
-        A = list(xs)
-        A.sort()
-        space = [A[-1], A[-2]]
-
-        # print(space)
 
         # User parameters 
         types, sensor_distribution = pf.GetUsersParameters()
