@@ -103,9 +103,9 @@ class Data:
 
 
 class BOVariables:
-    def __init__(self, Data_path, epsilon, initSensorNum, maxLSSensorNum, maxISSensorNum, radius, sampleSize, ROS):
+    def __init__(self, base_path, testbed, epsilon, initSensorNum, maxLSSensorNum, maxISSensorNum, radius, sampleSize, ROS):
         self.epsilon = epsilon
-        self.Data_path = Data_path
+        self.Data_path = base_path + testbed
         self.initSensorNum = initSensorNum
         self.maxLSSensorNum = maxLSSensorNum
         self.maxISSensorNum = maxISSensorNum
@@ -133,6 +133,7 @@ class BOVariables:
 
         # Parsing the space model: 
         space, rooms = pf.ParseWorld(simworldname)
+        sim_sis.AddRandomnessToDatasets(self.epsilon, self.data_path, rooms)
 
         xs = []
         for i in space:
@@ -172,7 +173,8 @@ class BOVariables:
 
 
 class BayesianOptimization:
-    def __init__(self, 
+    def __init__(self,
+                 testbed = 'Testbed1/', 
                  surrogate_type = 'prf',
                  # acq_optimizer_type = 'random_scipy',
                  acq_optimizer_type = 'local_random',
@@ -195,6 +197,7 @@ class BayesianOptimization:
                                        'model_accelerometer': False,
                                        'model_electricity_sensor': False}):
         
+        self.testbed = testbed
         self.acq_optimizer_type = acq_optimizer_type
         self.acquisition_function = acquisition_function
         self.task_id = task_id
@@ -215,8 +218,8 @@ class BayesianOptimization:
         self.LSsensorTypesNum = sum(1 for condition in list(input_sensor_types.values())[0:2] if condition)
         self.ISsensorTypesNum = sum(1 for condition in list(input_sensor_types.values())[2:5] if condition)
 
-
-        Data_path = '../SensorDeploymentOptimization/'
+        testbed
+        base_path = '../SensorDeploymentOptimization/'
         sys.path.append('..')
 
         finalResults = []
@@ -228,7 +231,8 @@ class BayesianOptimization:
                                             width = self.CONSTANTS['width'], 
                                             MaxLSSensors = self.CONSTANTS['max_LS_sensors']
                                            )
-        self.BOV =  BOVariables(Data_path, 
+        self.BOV =  BOVariables(base_path, 
+                                self.testbed,
                                 self.CONSTANTS['epsilon'], 
                                 self.CONSTANTS['initial_samples'],
                                 self.CONSTANTS['max_LS_sensors'], 

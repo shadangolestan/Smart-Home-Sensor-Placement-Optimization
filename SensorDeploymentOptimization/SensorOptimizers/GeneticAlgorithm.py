@@ -57,7 +57,6 @@ class Chromosome:
           for y in Ys:
             self.placeHolders.append([x, y])
             
-        print(self.placeHolders)
 
     def SensorConfigurationSetup(self):
         Xs = self.frange(self.epsilon, self.space[0], self.epsilon)
@@ -116,10 +115,11 @@ class Chromosome:
 
 class GA:
     chromosomes = []
-    def __init__(self, population, initializationMethod, Data_path, epsilon, initSensorNum, maxSensorNum, radius, mutation_rate, crossover, survival_rate, reproduction_rate, ROS):
+    def __init__(self, testbed, population, initializationMethod, path, epsilon, initSensorNum, maxSensorNum, radius, mutation_rate, crossover, survival_rate, reproduction_rate, ROS):
         self.population = population
         self.mode = initializationMethod
-        self.Data_path = Data_path
+        self.data_path = path + testbed
+        self.base_path = path
         self.epsilon = epsilon
         self.initSensorNum = initSensorNum
         self.maxSensorNum = maxSensorNum
@@ -131,6 +131,8 @@ class GA:
         
         self.sensor_distribution, self.types, self.space, self.rooms, self.agentTraces = self.ModelsInitializations(ROS)
         
+        
+
         for i in range(population):
             self.chromosomes.append(Chromosome(self.mode, self.space, self.initSensorNum, self.epsilon))
 
@@ -225,24 +227,29 @@ class GA:
 
     def ModelsInitializations(self, ROS):
         #----- Space and agent models -----: 
-        simworldname = self.Data_path + '/Configuration Files/simulationWorld2.xml'
+        simworldname = self.base_path + '/Configuration Files/simulationWorld2.xml'
         agentTraces = []
+        agent_trace_path_ROS = 'Agent Trace Files ROS/'
+        agent_trace_path = 'Agent Trace Files/'
         import os
         if ROS:
-            directory = os.fsencode(self.Data_path + 'Agent Trace Files ROS/')
+            directory = os.fsencode(self.data_path + agent_trace_path_ROS)
         else:
-            directory = os.fsencode(self.Data_path + 'Agent Trace Files/')
+            directory = os.fsencode(self.data_path + agent_trace_path)
             
+        # Parsing the space model: 
+        space, rooms = pf.ParseWorld(simworldname)
+        SIM_SIS_Simulator.AddRandomnessToDatasets(self.epsilon, self.data_path, rooms)
+
         for file in os.listdir(directory):
             filename = os.fsdecode(file)
             if filename.endswith(".csv"): 
                 if ROS:
-                    agentTraces.append(self.Data_path + 'Agent Trace Files ROS/' + filename)
+                    agentTraces.append(self.data_path + agent_trace_path_ROS + filename)
                 else:
-                    agentTraces.append(self.Data_path + 'Agent Trace Files/' + filename)
+                    agentTraces.append(self.data_path + agent_trace_path + filename)
 
-        # Parsing the space model: 
-        space, rooms = pf.ParseWorld(simworldname)
+        
 
         xs = []
         for i in space:
@@ -263,14 +270,24 @@ class GA:
               
         return sensor_distribution, types, space, rooms, agentTraces
 
-    def calculate_confusion_matrix(self, config, simulateMotionSensors, simulateEstimotes, Plotting, iteration):       
+    def calculate_confusion_matrix(self, config, simulateMotionSensors, simulateEstimotes, SimulateIS, Plotting, iteration):       
         
         files = []
         all_sensors = set([])
 
         for agentTrace in self.agentTraces:
             filecoding = ' '#"_" + str(iteration) + "_c" + str(index + 1) + '(' + self.mode + ')'
-            df_ = SIM_SIS_Simulator.RunSimulator(self.space, self.rooms, agentTrace, config, simulateMotionSensors, simulateEstimotes, Plotting , self.Data_path)
+            df_ = SIM_SIS_Simulator.RunSimulator(self.space, 
+                                                 self.rooms, 
+                                                 agentTrace, 
+                                                 config, 
+                                                 simulateMotionSensors, 
+                                                 simulateEstimotes, 
+                                                 Plotting,
+                                                 SimulateIS, 
+                                                 self.base_path)
+
+
             dataFile, sensors = self.PreProcessor(df_)
             all_sensors.update(sensors)
             #self.D = dataFile
@@ -284,7 +301,7 @@ class GA:
         return al.get_confusion_matrix(files, all_sensors)
 
     
-    def RunFitnessFunction(self, simulateMotionSensors, simulateEstimotes, Plotting, iteration):       
+    def RunFitnessFunction(self, simulateMotionSensors, simulateEstimotes, SimulateIS, Plotting, iteration):       
         for index, chromosome in enumerate(self.chromosomes):
             if (chromosome.fitness == -1):
                 files = []
@@ -293,7 +310,17 @@ class GA:
 
                 for agentTrace in self.agentTraces:
                     filecoding = ' '#"_" + str(iteration) + "_c" + str(index + 1) + '(' + self.mode + ')'
-                    df_ = SIM_SIS_Simulator.RunSimulator(self.space, self.rooms, agentTrace, chromosome.GetSensorConfiguration() , simulateMotionSensors, simulateEstimotes, Plotting , self.Data_path)
+
+                    df_ = SIM_SIS_Simulator.RunSimulator(self.space, 
+                                                 self.rooms, 
+                                                 agentTrace, 
+                                                 chromosome.GetSensorConfiguration(), 
+                                                 simulateMotionSensors, 
+                                                 simulateEstimotes, 
+                                                 Plotting,
+                                                 SimulateIS, 
+                                                 self.base_path)
+
                     dataFile, sensors = self.PreProcessor(df_)
                     all_sensors.update(sensors)
                     #self.D = dataFile
@@ -606,17 +633,17 @@ def get_confusion_matrix(config,
         if (runningOnGoogleColab == True):
             from google.colab import drive    
             drive.mount('/content/gdrive', force_remount=True)
-            Data_path = 'gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/'
+            base_path = 'gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/'
             sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/')
 
         else:
-            Data_path = '../SensorDeploymentOptimization/'
+            base_path = '../SensorDeploymentOptimization/'
             # sys.path.append('../../Codes/SensorDeploymentOptimization/')
             sys.path.append('..')
            
         ga = GA(population, 
                 'expert', 
-                Data_path, 
+                base_path, 
                 epsilon, 
                 initSensorNum, 
                 maxSensorNum, 
@@ -628,11 +655,17 @@ def get_confusion_matrix(config,
                 ROS)
         
 
-        return ga.calculate_confusion_matrix(config.GetSensorConfiguration(), True, False, False, 1)
+        return ga.calculate_confusion_matrix(config.GetSensorConfiguration(), True, False, False, False, 1)
 
 
 
-def run(run_on_google_colab = False, 
+def run(testbed,
+        input_sensor_types = {'model_motion_sensor': True, 
+                              'model_beacon_sensor': False,
+                              'model_pressure_sensor': False,
+                              'model_accelerometer': False,
+                              'model_electricity_sensor': False},
+        run_on_google_colab = False, 
         iteration = 100, 
         population = 10,
         epsilon = 1, # The distance between two nodes in the space grid:
@@ -656,11 +689,11 @@ def run(run_on_google_colab = False,
         if (runningOnGoogleColab == True):
             from google.colab import drive    
             drive.mount('/content/gdrive', force_remount=True)
-            Data_path = 'gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/'
+            base_path = 'gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/'
             sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/')
 
         else:
-            Data_path = '../SensorDeploymentOptimization/'
+            base_path = '../SensorDeploymentOptimization/'
             # sys.path.append('../../Codes/SensorDeploymentOptimization/')
             sys.path.append('..')
 
@@ -676,9 +709,10 @@ def run(run_on_google_colab = False,
         f = IntProgress(min=0, max=iteration) # instantiate the bar
         display(f) # display the bar
 
-        ga = GA(population, 
+        ga = GA(testbed,
+                population, 
                 'expert', 
-                Data_path, 
+                base_path, 
                 epsilon, 
                 initSensorNum, 
                 maxSensorNum, 
@@ -689,12 +723,12 @@ def run(run_on_google_colab = False,
                 reproduction_rate,
                 ROS)
 
-        ga.RunFitnessFunction(True, False, False, 1)
+        ga.RunFitnessFunction(True, False, False, False, 1)
 
         for epoch in range(iteration):
             f.value += 1
             ga.GetNextGeneration()
-            ga.RunFitnessFunction(True, False, False, 1)
+            ga.RunFitnessFunction(True, False, False, False, 1)
             ga.Selection()
 
             if (print_epochs == True):

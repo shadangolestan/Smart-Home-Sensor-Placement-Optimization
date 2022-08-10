@@ -161,16 +161,18 @@ class KG(AbstractAcquisitionFunction):
 
         import random
         import numpy as np
-        neighbours = 100
+        neighbours = 200
         Ns = []
         for i in range(neighbours):  
             N = []
             N_sensorType = [0]*num_sensors
             N_x = []
             N_y = []
+            
             for s in range(num_sensors):
-                N_x.append(clamp(xx[s] + (self.error * random.randint(-1,1)), 0 , 1))
-                N_y.append(clamp(yy[s] + (self.error * random.randint(-1,1)), 0, 1))
+                N_x.append(clamp(xx[s] + (self.error/8 * random.randint(-1,1)), 0, 1))
+                N_y.append(clamp(yy[s] + (self.error/8 * random.randint(-1,1)), 0, 1))
+                
             N = N_sensorType + N_x + N_y   
             Ns.append(N)  
             
@@ -199,86 +201,59 @@ class KG(AbstractAcquisitionFunction):
         
         error = self.error
                         
-        def calculate_f():
+        def calculate_f(MUs, STDs):
             m = MUs
             s = STDs
             
-            
             z = (self.eta - m - self.par) / s
-            return (self.eta - m - self.par) * norm.cdf(z) + s * norm.pdf(z)    
+            result = (self.eta - m - self.par) * norm.cdf(z) + s * norm.pdf(z)
+            
+            return result    
         
-
+        ll = []
         MUs = []
         STDs = []
         f = []
         for x in X:
             Ns = self.sigma_neighbours(x)
             
-            m, v = self.model.predict_marginalized_over_instances(np.asarray(Ns))
-            s = np.sqrt(v)
-            # neighbours = calculate_f()
+            m_ngbrs, v_ngbrs = self.model.predict_marginalized_over_instances(np.asarray(Ns))
+            s_ngbrs = np.sqrt(v_ngbrs)
             
             m_c, v_c = self.model.predict_marginalized_over_instances(np.asarray([x]))
             s_c = np.sqrt(v_c)
             
-            sigma_m = 0
-            sigma_s = 0
-            for i, f_i in enumerate(m):
-                sigma_m += np.abs(f_i - m_c)
-                sigma_s += np.abs(s[i] - s_c)
             
-            avg_m = sigma_m / len(m)
-            avg_s = sigma_s / len(m)
+            sigma = 0 
+            for ind, f_i in enumerate(m_ngbrs):
+                sigma += np.abs(f_i - m_c[0])
+                # s_c += s_ngbrs[ind]
+                
             
-            MUs.append(list((((avg_m + m_c) / 2) / (1 + sigma_m))[0]))
-            STDs.append(list((((avg_s + s_c) / 2) / (1 + sigma_s))[0]))
+            neighbors_performance = sigma / len(m_ngbrs)
+            # s_c = s_c / (len(m_ngbrs) + 1)
+            
+            
 
-            # STDs.append(list(s_c[0]))
-            
-            '''
-            config = calculate_f()
-            
-            sigma = 0
-            for f_i in neighbours:
-                sigma += np.abs(config - f_i)
-                
-            avg = sigma / len(neighbours)
-            
-                
-            f.append(((avg + config) / 2) / (1 + sigma))
-            
-            '''
-            
-            '''
-            if self.eta is None:
-                raise ValueError('No current best specified. Call update('
-                                 'eta=<int>) to inform the acquisition function '
-                                 'about the current best value.')
-            
-            if np.any(s == 0.0):
-                # if std is zero, we have observed x on all instances
-                # using a RF, std should be never exactly 0.0
-                # Avoid zero division by setting all zeros in s to one.
-                # Consider the corresponding results in f to be zero.
-                self.logger.warning("Predicted std is 0.0 for at least one sample.")
-                s_copy = np.copy(s)
-                s[s_copy == 0.0] = 1.0
-                neighbours_f = calculate_f()
-                neighbours_f[s_copy == 0.0] = 0.0
-            
-            else:
-                neighbours_f = calculate_f()
-                
-            '''            
+
+            M = m_c / (1 + neighbors_performance[0])
+
+            if m_c - M < 0.5:
+                print('m_c is:', m_c)
+                print('neighbors_performance[0] is', neighbors_performance[0])
+                print('M is:', M)
+
+
+            f.append(norm.cdf((self.eta - M[0][0] - self.par) / s_c)[0])
         
-        f = calculate_f()
-        
+
         if (np.asarray(f) < 0).any():
             raise ValueError(
                 "Expected Improvement is smaller than 0 for at least one "
                 "sample.")
         
-        return np.asarray(f)
+        f = np.asarray(f)
+        return f
         
         
 class EI(AbstractAcquisitionFunction):
@@ -327,7 +302,7 @@ class EI(AbstractAcquisitionFunction):
         """
         if len(X.shape) == 1:
             X = X[:, np.newaxis]
-
+        
         m, v = self.model.predict_marginalized_over_instances(X)
         s = np.sqrt(v)
 
@@ -356,7 +331,8 @@ class EI(AbstractAcquisitionFunction):
             raise ValueError(
                 "Expected Improvement is smaller than 0 for at least one "
                 "sample.")
-
+        
+       
         return f
 
 

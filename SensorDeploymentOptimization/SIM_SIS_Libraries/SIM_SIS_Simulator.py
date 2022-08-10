@@ -240,30 +240,35 @@ def AddRandomnessToDatasets(epsilon, data_path, rooms):
     import pandas as pd
     import os
     
+    print('Processing Region of Similarity...', end = ' ')
     directory = os.fsencode(data_path + 'Agent Trace Files/')
-    
-    for file in os.listdir(directory):
-        # print(os.fsdecode(directory + file))
-        data = pd.read_csv(os.fsdecode(directory + file), index_col = False)
-        
-        # print(data)
-        
-        for i in range(1, len(data)):
-            xtrace = float(data.x[i])
-            ytrace = float(data.y[i])
+    destination = os.fsencode(data_path + 'Agent Trace Files ROS/')
 
-            agent1Loc = [xtrace, ytrace]
-            agent1Loc_rnd = RegionOfSimilarity(agent1Loc, epsilon, rooms)
-            data.at[i, 'x'] = agent1Loc_rnd[0]
-            data.at[i, 'y'] = agent1Loc_rnd[1]
-
-        data.to_csv(os.fsdecode(directory + file) + "UPDATED.csv", sep=',', index=False)
+    if len(os.listdir(destination)) == 0:
+        for file in os.listdir(directory):
+            # print(os.fsdecode(directory + file))
+            data = pd.read_csv(os.fsdecode(directory + file), index_col = False)
             
+            for i in range(1, len(data)):
+                xtrace = float(data.x[i])
+                ytrace = float(data.y[i])
+
+                agent1Loc = [xtrace, ytrace]
+
+
+                agent1Loc_rnd = RegionOfSimilarity(agent1Loc, epsilon, rooms)
+                data.at[i, 'x'] = agent1Loc_rnd[0]
+                data.at[i, 'y'] = agent1Loc_rnd[1]
+
+            data.to_csv(os.fsdecode(destination + file) + "_UPDATED.csv", sep=',', index=False)
+                
+    
+    print('[COMPLETED]')
+
 #DONE
 def RegionOfSimilarity(exactLocation, epsilon, rooms):    
     new_x =  uniform(max(exactLocation[0] - epsilon, 0), exactLocation[0] + epsilon)
     new_y =  uniform(max(exactLocation[1] - epsilon, 0), exactLocation[1] + epsilon)
-    
     
     room, name = FindAgentsRoom(exactLocation[0], exactLocation[1], rooms)
     
