@@ -135,12 +135,14 @@ class Chromosome:
           for y in Ys:
             self.placeHolders.append([x, y])
             
-        print(self.placeHolders)
+        # print(self.placeHolders)
 
     def GreedySensorConfigurationSetup(self, counter):
         Xs = self.frange(self.epsilon, self.space[0], self.epsilon)
         Ys = self.frange(self.epsilon, self.space[1], self.epsilon)
         self.grid = np.zeros(len(Xs) * len(Ys)).tolist()
+
+
         cell = counter
         self.grid[cell] = 1
             
@@ -230,12 +232,12 @@ class Chromosome:
     
 class GreedyAndLocalSearch:
     chromosomes = []
-    def __init__(self, population, initializationMethod, Data_path, epsilon, initSensorNum, maxSensorNum, radius, ROS, learning_rate, sensorTypesNum):
+    def __init__(self, testbed, initializationMethod, path, epsilon, initSensorNum, maxSensorNum, radius, ROS, learning_rate, sensorTypesNum):
         self.results = []
         self.best_configuration_history = []
-        self.population = population
+        self.data_path = path + testbed
+        self.base_path = path
         self.mode = initializationMethod
-        self.Data_path = Data_path
         self.epsilon = epsilon
         self.initSensorNum = initSensorNum
         self.maxSensorNum = maxSensorNum
@@ -244,8 +246,14 @@ class GreedyAndLocalSearch:
         self.sensorTypesNum = sensorTypesNum
         
         self.sensor_distribution, self.types, self.space, self.rooms, self.agentTraces = self.ModelsInitializations(ROS)
-        
-        for i in range(population):
+
+        # TODO: THIS FORMULA NEEDS TO BE GENERALIZED:
+        self.population = int(int(((self.space[0] - 2*epsilon) / 0.5) + 2) * int(((self.space[1] - 2*epsilon) / 0.5) + 1))
+
+        # self.population = int(int((self.space[1] / epsilon) - epsilon) * int((self.space[0]) / epsilon) - epsilon)
+
+
+        for i in range(self.population):
             self.chromosomes.append(Chromosome(grid = None,
                                                mode = self.mode,
                                                space = self.space,
@@ -408,33 +416,28 @@ class GreedyAndLocalSearch:
 
     def ModelsInitializations(self, ROS):
         #----- Space and agent models -----: 
-        simworldname = self.Data_path + '/Configuration Files/simulationWorld2.xml'
+        simworldname = self.base_path + '/Configuration Files/simulationWorld2.xml'
         agentTraces = []
+        agent_trace_path_ROS = 'Agent Trace Files ROS/'
+        agent_trace_path = 'Agent Trace Files/'
         import os
         if ROS:
-            directory = os.fsencode(self.Data_path + 'Agent Trace Files ROS/')
+            directory = os.fsencode(self.data_path + agent_trace_path_ROS)
         else:
-            directory = os.fsencode(self.Data_path + 'Agent Trace Files/')
+            directory = os.fsencode(self.data_path +agent_trace_path)
             
         for file in os.listdir(directory):
             filename = os.fsdecode(file)
             if filename.endswith(".csv"): 
                 if ROS:
-                    agentTraces.append(self.Data_path + 'Agent Trace Files ROS/' + filename)
+                    agentTraces.append(self.data_path + agent_trace_path_ROS + filename)
                 else:
-                    agentTraces.append(self.Data_path + 'Agent Trace Files/' + filename)
+                    agentTraces.append(self.data_path + agent_trace_path + filename)
 
         # Parsing the space model: 
         space, rooms = pf.ParseWorld(simworldname)
-
-        xs = []
-        for i in space:
-          for j in i:
-            xs.append(j)
-        A = list(xs)
-        A.sort()
-        space = [A[-1], A[-2]]
-
+        sim_sis.AddRandomnessToDatasets(self.epsilon, self.data_path, rooms)
+        space = [space[-1][0], space[1][1]]
 
         # User parameters 
         types, sensor_distribution = pf.GetUsersParameters()
@@ -461,7 +464,7 @@ class GreedyAndLocalSearch:
                                            simulateEstimotes, 
                                            simulateIS, 
                                            Plotting , 
-                                           self.Data_path)
+                                           self.base_path)
 
                 dataFile, sensors = self.PreProcessor(df_)
                 all_sensors.update(sensors)
@@ -489,7 +492,7 @@ class GreedyAndLocalSearch:
 
     def frange(self, start, stop, step):
         steps = []
-        while start <= stop:
+        while start < stop:
             steps.append(start)
             start +=step
             
@@ -635,7 +638,7 @@ class GreedyAndLocalSearch:
 
     def frange(self, start, stop, step):
         steps = []
-        while start <= stop:
+        while start < stop:
             steps.append(start)
             start +=step
 
@@ -676,7 +679,8 @@ def MakeDataBoundaries(height = 10.5, width = 6.6, MaxLSSensors = 15):
 
     return d
     
-def run(run_on_colab = False, 
+def run(testbed = 'Testbed1/',
+        run_on_colab = False, 
         iteration = 1000, 
         population = 1,
         epsilon = 1, # The distance between two nodes in the space grid:
@@ -705,6 +709,7 @@ def run(run_on_colab = False,
     global ISsensorTypesNum
     
     runningOnGoogleColab = run_on_colab
+
     multi_objective_flag = multi_objective
     CONSTANTS = {
         'iterations': iteration,
@@ -724,22 +729,22 @@ def run(run_on_colab = False,
     if (runningOnGoogleColab == True):
         from google.colab import drive    
         drive.mount('/content/gdrive', force_remount=True)
-        Data_path = 'gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/'
+        base_path = 'gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/'
         sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/')
 
     else:
-        Data_path = '../SensorDeploymentOptimization/'
+        base_path = '../SensorDeploymentOptimization/'
         sys.path.append('..')
 
     finalResults = []
     w = CONSTANTS['width'] - 0.5
     h = CONSTANTS['height'] - 0.5
 
-    dataBoundaries = MakeDataBoundaries(
-                                        height = CONSTANTS['height'], 
-                                        width = CONSTANTS['width'], 
-                                        MaxLSSensors = CONSTANTS['max_LS_sensors']
-                                       )
+    # dataBoundaries = MakeDataBoundaries(
+    #                                     height = CONSTANTS['height'], 
+    #                                     width = CONSTANTS['width'], 
+    #                                     MaxLSSensors = CONSTANTS['max_LS_sensors']
+    #                                    )
     
     results = []
     best_configuration_history = []
@@ -748,11 +753,10 @@ def run(run_on_colab = False,
     # f = IntProgress(min=0, max=iteration) # instantiate the bar
     # display(f) # display the bar
     
-    population = int((CONSTANTS['height'] / epsilon) * (CONSTANTS['width'] / epsilon))
-    
-    GLS = GreedyAndLocalSearch(population, 
+
+    GLS = GreedyAndLocalSearch(testbed, 
                                'expert', 
-                               Data_path, 
+                               base_path, 
                                epsilon, 
                                CONSTANTS['max_LS_sensors'], 
                                CONSTANTS['max_LS_sensors'], 
