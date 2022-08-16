@@ -248,7 +248,7 @@ class GreedyAndLocalSearch:
         self.sensor_distribution, self.types, self.space, self.rooms, self.agentTraces = self.ModelsInitializations(ROS)
 
         # TODO: THIS FORMULA NEEDS TO BE GENERALIZED:
-        self.population = int(int(((self.space[0] - 2*epsilon) / 0.5) + 2) * int(((self.space[1] - 2*epsilon) / 0.5) + 1))
+        self.population = int(int(((self.space[0] - 2*epsilon) / epsilon) + 2) * int(((self.space[1] - 2*epsilon) / epsilon) + 1))
 
         # self.population = int(int((self.space[1] / epsilon) - epsilon) * int((self.space[0]) / epsilon) - epsilon)
 
