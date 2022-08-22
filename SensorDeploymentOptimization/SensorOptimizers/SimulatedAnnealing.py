@@ -133,23 +133,24 @@ class Chromosome:
         
         for x in Xs:
           for y in Ys:
-            self.placeHolders.append([x, y])
-            
-        # print(self.placeHolders)
+            if (x < 2 and y < 2):
+                continue
+            else:
+                self.placeHolders.append([x, y])
+
 
     def GreedySensorConfigurationSetup(self, counter):
-        Xs = self.frange(self.epsilon, self.space[0], self.epsilon)
-        Ys = self.frange(self.epsilon, self.space[1], self.epsilon)
-        self.grid = np.zeros(len(Xs) * len(Ys)).tolist()
-
+        # Xs = self.frange(self.epsilon, self.space[0], self.epsilon)
+        # Ys = self.frange(self.epsilon, self.space[1], self.epsilon)
+        self.grid = np.zeros(len(self.placeHolders)).tolist()
 
         cell = counter
         self.grid[cell] = 1
             
     def SensorConfigurationSetup(self):
-        Xs = self.frange(self.epsilon, self.space[0], self.epsilon)
-        Ys = self.frange(self.epsilon, self.space[1], self.epsilon)
-        self.grid = np.zeros(len(Xs) * len(Ys)).tolist()
+        # Xs = self.frange(self.epsilon, self.space[0], self.epsilon)
+        # Ys = self.frange(self.epsilon, self.space[1], self.epsilon)
+        self.grid = np.zeros(len(self.placeHolders)).tolist()
         
         i = 0
         while i < self.initSensorNum:
@@ -250,8 +251,28 @@ class GreedyAndLocalSearch:
         # TODO: THIS FORMULA NEEDS TO BE GENERALIZED:
         self.population = int(int(((self.space[0] - 2*epsilon) / epsilon) + 2) * int(((self.space[1] - 2*epsilon) / epsilon) + 1))
 
-        # self.population = int(int((self.space[1] / epsilon) - epsilon) * int((self.space[0]) / epsilon) - epsilon)
+        W = []
+        H = []
+        grid = []
+        start = self.epsilon
 
+        while start < self.space[0]:
+            W.append(start)
+            start += self.epsilon
+
+        while start < self.space[1]:
+            H.append(start)
+            start += self.epsilon
+
+        for w in W:
+            for h in H:
+                if w < 2 and h < 2:
+                    continue
+                else:
+                    grid.append([w, h])
+
+        self.population = len(grid)
+        # self.population = int(int((self.space[1] / epsilon) - epsilon) * int((self.space[0]) / epsilon) - epsilon)
 
         for i in range(self.population):
             self.chromosomes.append(Chromosome(grid = None,

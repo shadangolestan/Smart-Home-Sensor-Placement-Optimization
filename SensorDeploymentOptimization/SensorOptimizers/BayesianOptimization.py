@@ -111,6 +111,33 @@ class BOVariables:
         self.maxISSensorNum = maxISSensorNum
         self.radius = radius
         self.sensor_distribution, self.types, self.space, self.rooms, self.agentTraces = self.ModelsInitializations(ROS)
+        self.CreateGrid()
+
+    def CreateGrid(self):
+        x = self.space[0]
+        y = self.space[1]
+
+        W = []
+        start = self.epsilon
+
+        while start < x:
+            W.append(start)
+            start += self.epsilon
+
+        H = []
+        start = self.epsilon
+
+        while start < y:
+            H.append(start)
+            start += self.epsilon
+
+        self.grid = []
+
+        for w in W:
+            for h in H:
+                self.grid.append([w, h])
+
+
 
     def ModelsInitializations(self, ROS):
         #----- Space and agent models -----: 
@@ -443,6 +470,27 @@ class BayesianOptimization:
         sensorPositions = []
         sensorTypes = []
         sensor_xy = []
+
+        if (self.LSsensorTypesNum > 0):
+            for i in range(1, self.CONSTANTS['max_LS_sensors'] + 1):
+                sensor_xy = ast.literal_eval(config['l' + str(i)])
+                # sensorPositions.append([sensor_xy[0]*self.CONSTANTS['epsilon'], sensor_xy[1]*self.CONSTANTS['epsilon']])
+                sensorPositions.append(sensor_xy)
+                sensorTypes.append(1)
+
+        data = Data(sensorPositions, sensorTypes, self.BOV.space, self.CONSTANTS['epsilon'])
+
+        return 100 - self.black_box_function(data, 
+                                             simulateMotionSensors = self.sensor_types['model_motion_sensor'],
+                                             simulateEstimotes = self.sensor_types['model_beacon_sensor'],
+                                             simulateIS = (self.sensor_types['model_pressure_sensor'] and
+                                                           self.sensor_types['model_accelerometer'] and
+                                                           self.sensor_types['model_electricity_sensor']))
+
+        '''
+        sensorPositions = []
+        sensorTypes = []
+        sensor_xy = []
         excluded = []
 
         if (self.LSsensorTypesNum > 0):
@@ -473,6 +521,7 @@ class BayesianOptimization:
                                              simulateIS = (self.sensor_types['model_pressure_sensor'] and
                                                            self.sensor_types['model_accelerometer'] and
                                                            self.sensor_types['model_electricity_sensor']))
+        '''
     
     def MakeDataBoundaries(self, height = 10.5, width = 6.6, MaxLSSensors = 15):
         from collections import defaultdict, OrderedDict
@@ -530,7 +579,31 @@ class BayesianOptimization:
                                                            self.sensor_types['model_accelerometer'] and
                                                            self.sensor_types['model_electricity_sensor']))
 
+
+    def is_valid(self, sensor_placeholder):
+        # This is for checking locations where placing sensors are not allowed. 
+        # TODO: the restricted area needs to be read from a config file.
+
+        if sensor_placeholder[0] < 2 and sensor_placeholder[1] < 2:
+            return False
+        else:
+            return True
+
+
     def BuildConfigurationSearchSpace(self, initial_state):
+        list_of_variables = []
+        if (self.LSsensorTypesNum > 0):
+            ls = []
+            for sensor_placeholder in self.BOV.grid:
+                if self.is_valid(sensor_placeholder):
+                    ls.append(str(sensor_placeholder))
+
+            for i in range(1, self.CONSTANTS['max_LS_sensors'] + 1):                
+                list_of_variables.append(sp.Categorical("l" + str(i), ls, default_value= random.choice(ls)))
+
+        return list_of_variables
+
+        '''
         list_of_variables = []
         if (self.LSsensorTypesNum > 0):
             for i in range(1, self.CONSTANTS['max_LS_sensors'] + 1):
@@ -558,7 +631,7 @@ class BayesianOptimization:
                         t = sp.Constant("t" + str(i), 1)
 
                 else:
-                    raise NotImplementedError (initial_state + " is not implemented yet! Try using 'fixed' or 'random' values istead")
+                    raise NotImplementedError (initial_state + " is not implemented yet! Try using 'fixed' or 'random' initial states istead")
 
                 list_of_variables.append(x)
                 list_of_variables.append(y)
@@ -589,10 +662,11 @@ class BayesianOptimization:
 
                 list_of_variables.append(objects_location)
                 list_of_variables.append(t_o)
+        
 
         return list_of_variables
-        
-        
+        '''
+
     def run(self):
 
         # Define Search Space

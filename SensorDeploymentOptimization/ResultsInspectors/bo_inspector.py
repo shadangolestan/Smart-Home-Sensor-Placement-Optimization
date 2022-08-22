@@ -91,7 +91,7 @@ def plotter(
     if ax is None:
         ax = plt.gca()
 
-    ax.set_title(name)
+    # ax.set_title(name)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     # ax.grid()

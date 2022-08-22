@@ -15,14 +15,14 @@ def plot_convergence(
     iterations = range(1, 1001)
     maxs = [np.max(losses[:i]) for i in iterations]
     
-    print('len(maxs) 1', len(maxs))
+    # print('len(maxs) 1', len(maxs))
     
     compensation = 1000 - len(maxs)
     
     for i in range(compensation):
             maxs.append(maxs[len(maxs) - 1])
     
-    print('len(maxs) 2', len(maxs))
+    # print('len(maxs) 2', len(maxs))
     
     min_maxs = min(maxs)
     cliped_losses = np.clip(losses, min_maxs, None)
@@ -60,7 +60,7 @@ def plotter(
     if ax is None:
         ax = plt.gca()
 
-    ax.set_title("Convergence plot")
+    # ax.set_title("Convergence plot")
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.grid()
