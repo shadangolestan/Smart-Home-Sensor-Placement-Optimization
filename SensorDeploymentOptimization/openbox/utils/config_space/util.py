@@ -28,7 +28,13 @@ def convert_configurations_to_array(configs: List[Configuration]) -> np.ndarray:
                              dtype=np.float64)
     configuration_space = configs[0].configuration_space
     
-    return impute_default_values(configuration_space, configs_array)
+    print('configuration_space:', configuration_space)
+
+    Z = impute_default_values(configuration_space, configs_array)
+
+    print('Z: ', Z)
+
+    return Z
 
 
 def impute_default_values(

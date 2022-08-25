@@ -260,6 +260,7 @@ class GreedyAndLocalSearch:
             W.append(start)
             start += self.epsilon
 
+        start = self.epsilon
         while start < self.space[1]:
             H.append(start)
             start += self.epsilon
@@ -285,65 +286,11 @@ class GreedyAndLocalSearch:
                                                greedy = True,
                                                counter = i,
                                                chromosome_pointer = i))
-          
+
     def sortChromosomes(self, chroms):
         chroms.sort(key=lambda x: x.fitness, reverse=True)
    
     def RunGreedyAlgorithm(self):
-        '''
-        self.RunFitnessFunction(self.chromosomes, True, False, False, False, 1)
-        self.sortChromosomes()
-        
-        grid = self.chromosomes[0].grid
-        self.current_configs = [Chromosome(grid = grid,
-                                       mode = self.chromosomes[0].mode,
-                                       space = self.chromosomes[0].space,
-                                       initSensorNum = self.initSensorNum,
-                                       epsilon = self.epsilon,
-                                       new = False,
-                                       sensorTypesNum = self.sensorTypesNum,
-                                       greedy = True,
-                                       counter = 1)]
-        
-        self.RunFitnessFunction(self.current_configs, True, False, False, False, 1)
-        
-        picked_sensors = 1
-        
-        for i in range(1, len(self.chromosomes)):
-            new_grid = []
-            new_grid = [int(x + y) for x, y in zip(grid, self.chromosomes[i].grid)]
-            
-            self.test_configs = [Chromosome(grid = new_grid,
-                                       mode = self.chromosomes[0].mode,
-                                       space = self.chromosomes[0].space,
-                                       initSensorNum = self.initSensorNum,
-                                       epsilon = self.epsilon,
-                                       new = False,
-                                       sensorTypesNum = self.sensorTypesNum,
-                                       greedy = True,
-                                       counter = 1)]
-            
-            self.RunFitnessFunction(self.test_configs, True, False, False, False, 1)
-            
-            if (self.test_configs[0].fitness > self.current_configs[0].fitness):
-                grid = copy.deepcopy(new_grid)
-                self.current_configs = copy.deepcopy(self.test_configs)
-                picked_sensors = picked_sensors + 1
-                
-                if picked_sensors >= self.maxSensorNum:
-                    break  
-        
-        self.GreedyOutput = [Chromosome(grid = copy.deepcopy(grid),
-                                        mode = self.chromosomes[0].mode,
-                                        space = self.chromosomes[0].space,
-                                        initSensorNum = self.initSensorNum,
-                                        epsilon = self.epsilon,
-                                        new = False,
-                                        sensorTypesNum = self.sensorTypesNum,
-                                        greedy = True,
-                                        counter = 1)]
-                                        
-                                        '''
         picked_sensors = 1
         self.RunFitnessFunction(self.chromosomes, True, False, False, False, 1)        
         self.sortChromosomes(self.chromosomes)
@@ -365,20 +312,21 @@ class GreedyAndLocalSearch:
         
         while picked_sensors < self.maxSensorNum:   
             self.test_configs = []
+
             for i in range(1, len(self.chromosomes)):
                 new_grid = []
                 new_grid = [int(x + y) for x, y in zip(grid, self.chromosomes[i].grid)]
 
                 self.test_configs.append(Chromosome(grid = new_grid,
-                                           mode = self.chromosomes[0].mode,
-                                           space = self.chromosomes[0].space,
-                                           initSensorNum = self.initSensorNum,
-                                           epsilon = self.epsilon,
-                                           new = False,
-                                           sensorTypesNum = self.sensorTypesNum,
-                                           greedy = True,
-                                           counter = 1,
-                                           chromosome_pointer = self.chromosomes[i].chromosome_pointer))
+                                        mode = self.chromosomes[0].mode,
+                                        space = self.chromosomes[0].space,
+                                        initSensorNum = self.initSensorNum,
+                                        epsilon = self.epsilon,
+                                        new = False,
+                                        sensorTypesNum = self.sensorTypesNum,
+                                        greedy = True,
+                                        counter = 1,
+                                        chromosome_pointer = self.chromosomes[i].chromosome_pointer))
 
             
             self.RunFitnessFunction(self.test_configs, True, False, False, False, 1)            
@@ -386,11 +334,8 @@ class GreedyAndLocalSearch:
             
             self.results.append([(c.fitness, sum(c.grid)) for c in self.test_configs])
             self.best_configuration_history.append(self.test_configs[0])
-
             grid = self.test_configs[0].grid
-            
             self.chromosomes = list(filter(lambda x: x.chromosome_pointer != self.test_configs[0].chromosome_pointer, self.chromosomes)) 
-            
             picked_sensors = picked_sensors + 1
 
                              

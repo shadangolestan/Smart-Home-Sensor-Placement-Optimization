@@ -223,36 +223,30 @@ class KG(AbstractAcquisitionFunction):
             m_c, v_c = self.model.predict_marginalized_over_instances(np.asarray([x]))
             s_c = np.sqrt(v_c)
             
-            
             sigma = 0 
             for ind, f_i in enumerate(m_ngbrs):
                 sigma += np.abs(f_i - m_c[0])
                 # s_c += s_ngbrs[ind]
                 
-            
             neighbors_performance = sigma / len(m_ngbrs)
             # s_c = s_c / (len(m_ngbrs) + 1)
             
-            
-
-
             M = m_c / (1 + neighbors_performance[0])
 
-            if m_c - M < 0.5:
-                print('m_c is:', m_c)
-                print('neighbors_performance[0] is', neighbors_performance[0])
-                print('M is:', M)
-
-
             f.append(norm.cdf((self.eta - M[0][0] - self.par) / s_c)[0])
-        
+            # f.append(1)
 
         if (np.asarray(f) < 0).any():
             raise ValueError(
                 "Expected Improvement is smaller than 0 for at least one "
                 "sample.")
         
+        
+
         f = np.asarray(f)
+
+        
+        
         return f
         
         

@@ -137,7 +137,7 @@ class BOVariables:
             for h in H:
                 self.grid.append([w, h])
 
-
+        print(len(self.grid))
 
     def ModelsInitializations(self, ROS):
         #----- Space and agent models -----: 
@@ -465,6 +465,36 @@ class BayesianOptimization:
         time = dt.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
         return time
     
+    def sigma_neighbours(self, sensorPositions):        
+            num_sensors = int(len(sensorPositions))
+
+            Xs = []
+            Ys = []
+            for sensor in sensorPositions:
+                Xs.append(sensor[0])
+                Ys.append(sensor[1])
+
+            def clamp(num, min_value, max_value):
+                return max(min(num, max_value), min_value)
+
+            import random
+            import numpy as np
+            neighbours = 200
+            Ns = []
+            for i in range(neighbours):  
+                # TODO: change it to work with different sensor types:
+                N_sensorType = 1
+                
+                N = []
+                for s in range(num_sensors):
+                    N_x = clamp(Xs[s] + (self.error/self.space[0] * random.randint(-1,1)), 0, 1)
+                    N_y = clamp(Ys[s] + (self.error/self.space[1] * random.randint(-1,1)), 0, 1)
+                    N.append([N_x, N_y])
+
+                Ns.append(N)  
+                
+            return Ns
+
     
     def function_to_be_optimized(self, config):
         sensorPositions = []
