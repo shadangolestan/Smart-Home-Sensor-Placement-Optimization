@@ -137,7 +137,7 @@ class BOVariables:
             for h in H:
                 self.grid.append([w, h])
 
-        print(len(self.grid))
+        
 
     def ModelsInitializations(self, ROS):
         #----- Space and agent models -----: 

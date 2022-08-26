@@ -149,12 +149,23 @@ class KG(AbstractAcquisitionFunction):
         self.eta = None
         self.epsilon = epsilon
         self.error = error
-        
+    
 
-    def sigma_neighbours(self, x):        
-        num_sensors = int(len(x) / 3)
-        xx = x[num_sensors: num_sensors*2]
-        yy = x[num_sensors*2: num_sensors*3]
+    def sigma_neighbours(self, x):    
+        import ast    
+        num_sensors = int(len(x))
+        x_prime = []
+
+        for s in x:
+            print('ssssssssss:', s)
+            L = self.placeHolders[int(s)]
+            
+            
+            L = ast.literal_eval(L)
+            print('LLLLLLLLL:', L)
+            x_prime.append(L)
+
+        print(x_prime)
 
         def clamp(num, min_value, max_value):
            return max(min(num, max_value), min_value)
@@ -164,20 +175,24 @@ class KG(AbstractAcquisitionFunction):
         neighbours = 200
         Ns = []
         for i in range(neighbours):  
-            N = []
-            N_sensorType = [0]*num_sensors
-            N_x = []
-            N_y = []
-            
+            N = []            
             for s in range(num_sensors):
-                N_x.append(clamp(xx[s] + (self.error/8 * random.randint(-1,1)), 0, 1))
-                N_y.append(clamp(yy[s] + (self.error/8 * random.randint(-1,1)), 0, 1))
-                
-            N = N_sensorType + N_x + N_y   
-            Ns.append(N)  
-            
+                N_x = clamp(x_prime[s][0] + (self.epsilon * random.randint(-1,1)), 0, 1)
+                N_y = clamp(x_prime[s][1] + (self.epsilon * random.randint(-1,1)), 0, 1)
+                N = [N_x, N_y]
+                Ns.append(N) 
+
+        print(Ns)
         return Ns
         
+    def frange(self, start, stop, step):
+        steps = []
+        while start < stop:
+            steps.append(start)
+            start +=step
+            
+        return steps
+
     def _compute(self, X: np.ndarray, **kwargs):
         """Computes the KG value and its derivatives.
 
@@ -193,9 +208,15 @@ class KG(AbstractAcquisitionFunction):
         np.ndarray(N, 1)
             Expected Improvement of X
         """
+        # TODO: New acquisition function definition:
+        self.placeHolders = []
+        Xs = self.frange(self.epsilon, 8, self.epsilon)
+        Ys = self.frange(self.epsilon, 8, self.epsilon)
         
-        
-        # TODO: New acquisition function definition:        
+        for x in Xs:
+          for y in Ys:
+            self.placeHolders.append([x, y])
+
         if len(X.shape) == 1:
             X = X[:, np.newaxis]
         
