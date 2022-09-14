@@ -102,14 +102,39 @@ class Data:
 
 
 class BOVariables:
-    def __init__(self, Data_path, epsilon, initSensorNum, maxLSSensorNum, maxISSensorNum, radius, sampleSize, ROS):
+    def __init__(self, base_path, testbed, epsilon, initSensorNum, maxLSSensorNum, maxISSensorNum, radius, ROS):
         self.epsilon = epsilon
-        self.Data_path = Data_path
+        self.Data_path = base_path + testbed
         self.initSensorNum = initSensorNum
         self.maxLSSensorNum = maxLSSensorNum
         self.maxISSensorNum = maxISSensorNum
         self.radius = radius
         self.sensor_distribution, self.types, self.space, self.rooms, self.agentTraces = self.ModelsInitializations(ROS)
+        self.CreateGrid()
+
+    def CreateGrid(self):
+        x = self.space[0]
+        y = self.space[1]
+
+        W = []
+        start = self.epsilon
+
+        while start < x:
+            W.append(start)
+            start += self.epsilon
+
+        H = []
+        start = self.epsilon
+
+        while start < y:
+            H.append(start)
+            start += self.epsilon
+
+        self.grid = []
+
+        for w in W:
+            for h in H:
+                self.grid.append([w, h])
 
     def ModelsInitializations(self, ROS):
         #----- Space and agent models -----: 
@@ -132,14 +157,9 @@ class BOVariables:
 
         # Parsing the space model: 
         space, rooms = pf.ParseWorld(simworldname)
+        sim_sis.AddRandomnessToDatasets(self.epsilon, self.Data_path, rooms)
 
-        xs = []
-        for i in space:
-          for j in i:
-            xs.append(j)
-        A = list(set(xs))
-        A.sort()
-        space = [A[-1], A[-2]]
+        space = [space[-1][0], space[1][1]]
 
         # User parameters 
         types, sensor_distribution = pf.GetUsersParameters()
@@ -159,16 +179,6 @@ def frange(start, stop, step):
         
     return steps
 
-def MakeSensorCombinations(start, end, epsilon, sensorType, room):
-    a1, b1 = makeBoundaries(epsilon, start[0], end[0])
-    a2, b2 = makeBoundaries(epsilon, start[1], end[1])    
-    Xs = frange(a1, b1, epsilon)
-    Ys = frange(a2, b2, epsilon)
-    
-    points = list(itertools.product(list(itertools.product(Xs, Ys)), [room], [sensorType[0]])) 
-    C = itertools.combinations(points, distribution[room][types.index(sensorType)])
-
-    return C
 
 def PreProcessor(df):
     df['motion sensors'] = df['motion sensors'].apply(lambda s: list(map(int, s)))
@@ -456,88 +466,8 @@ def function_to_be_optimized(config):
                                                   sensor_types['model_electricity_sensor'])
                                    )
 
-
-'''
-    
-def confusion_matrix(config):
-    sensorPositions = []
-    sensor_xy = []
-    excluded = []
-
-    for i in range(1, len(config.keys()) + 1):
-        try:
-            sensor_xy.append(config['x' + str(i)] * CONSTANTS['epsilon'])
-            sensor_xy.append(config['y' + str(i)] * CONSTANTS['epsilon'])
-            sensorPositions.append(sensor_xy)
-            sensor_xy = []
-
-        except:
-            pass
-        
-    data = Data(sensorPositions, BOV.space, CONSTANTS['epsilon'])
-    return calculate_confusion_matrix(data)
- 
-    
-def get_confusion_matrix(config, 
-                         run_on_colab = False,
-                         epsilon = 1,
-                         radius = 1,
-                         print_epochs = True,
-                         height = 8.0,
-                         width = 8.0,
-                         ROS = False,
-                         multi_objective = False):
-    
-    global multi_objective_flag
-    global CONSTANTS
-    global runningOnGoogleColab
-    runningOnGoogleColab = run_on_colab
-    multi_objective_flag = multi_objective
-    CONSTANTS = {
-        'iterations': 1000,
-        'initial_samples': 10,
-        'epsilon': epsilon,
-        'radius': radius,
-        'height': height,
-        'width': width,
-        'max_sensors': 15
-    }
-
-    if (runningOnGoogleColab == True):
-        from google.colab import drive    
-        drive.mount('/content/gdrive', force_remount=True)
-        Data_path = 'gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/'
-        sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/')
-
-    else:
-        Data_path = '../SensorDeploymentOptimization/'
-        sys.path.append('..')
-
-    finalResults = []
-    w = CONSTANTS['width'] - 0.5
-    h = CONSTANTS['height'] - 0.5
-
-    dataBoundaries = MakeDataBoundaries(
-                                        height = CONSTANTS['height'], 
-                                        width = CONSTANTS['width'], 
-                                        MaxSensors = 15
-                                       )
-
-    global BOV
-    BOV =  BOVariables(
-                       Data_path, 
-                       CONSTANTS['epsilon'], 
-                       15, 
-                       15, 
-                       CONSTANTS['radius'],
-                       CONSTANTS['initial_samples'],
-                       ROS = True
-                      )
-    
-    return confusion_matrix(config)
-'''
-
 def run(config,
+        testbed = 'Testbed1/',
         run_on_colab = False, 
         epsilon = 1, # The distance between two nodes in the space grid:
         LSmaxSensorNum = 15,  # max location sensitive sensor numbers
@@ -578,15 +508,10 @@ def run(config,
     LSsensorTypesNum = sum(1 for condition in list(input_sensor_types.values())[0:2] if condition)
     ISsensorTypesNum = sum(1 for condition in list(input_sensor_types.values())[2:5] if condition)
     
-    if (runningOnGoogleColab == True):
-        from google.colab import drive    
-        drive.mount('/content/gdrive', force_remount=True)
-        Data_path = 'gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/'
-        sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/')
+    
+    base_path = '../SensorDeploymentOptimization/'
 
-    else:
-        Data_path = '../SensorDeploymentOptimization/'
-        sys.path.append('..')
+    sys.path.append('..')
 
     finalResults = []
     w = CONSTANTS['width'] - 0.5
@@ -599,14 +524,14 @@ def run(config,
                                        )
 
     global BOV
-    BOV =  BOVariables(
-                       Data_path, 
+    BOV =  BOVariables(base_path, 
+                       testbed,
                        CONSTANTS['epsilon'], 
                        CONSTANTS['initial_samples'],
                        CONSTANTS['max_LS_sensors'], 
                        CONSTANTS['max_IS_sensors'], 
                        CONSTANTS['radius'],
-                       CONSTANTS['initial_samples'],
+                       # CONSTANTS['initial_samples'],
                        ROS = True
                       )
 

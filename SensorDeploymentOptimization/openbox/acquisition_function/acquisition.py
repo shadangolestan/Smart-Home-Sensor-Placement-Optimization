@@ -157,32 +157,35 @@ class KG(AbstractAcquisitionFunction):
         x_prime = []
 
         for s in x:
-            print('ssssssssss:', s)
-            L = self.placeHolders[int(s)]
-            
-            
-            L = ast.literal_eval(L)
-            print('LLLLLLLLL:', L)
+            L = self.placeHolders[int(s)]            
             x_prime.append(L)
 
-        print(x_prime)
+        # print('configuration is:', x_prime)
 
         def clamp(num, min_value, max_value):
            return max(min(num, max_value), min_value)
 
         import random
         import numpy as np
-        neighbours = 200
+        neighbours = 100
         Ns = []
-        for i in range(neighbours):  
+        tempNs = []
+        for _ in range(neighbours):  
             N = []            
+            tempN = []
             for s in range(num_sensors):
-                N_x = clamp(x_prime[s][0] + (self.epsilon * random.randint(-1,1)), 0, 1)
-                N_y = clamp(x_prime[s][1] + (self.epsilon * random.randint(-1,1)), 0, 1)
-                N = [N_x, N_y]
-                Ns.append(N) 
+                N_x = clamp(x_prime[s][0] + (self.epsilon * random.randint(-1,1)), self.epsilon, 8 - self.epsilon)
+                N_y = clamp(x_prime[s][1] + (self.epsilon * random.randint(-1,1)), self.epsilon, 8 - self.epsilon)
 
-        print(Ns)
+                tempN.append(list([N_x, N_y]))
+
+                N.append(self.placeHolders.index(list([N_x, N_y])))
+                
+            
+            Ns.append(N)
+            tempNs.append(tempN)
+
+        # print('neighbors are:', tempNs)
         return Ns
         
     def frange(self, start, stop, step):
@@ -251,23 +254,16 @@ class KG(AbstractAcquisitionFunction):
                 
             neighbors_performance = sigma / len(m_ngbrs)
             # s_c = s_c / (len(m_ngbrs) + 1)
-            
-            M = m_c / (1 + neighbors_performance[0])
 
-            f.append(norm.cdf((self.eta - M[0][0] - self.par) / s_c)[0])
-            # f.append(1)
+            M = m_c / (1 + neighbors_performance)
+            f.append(list(norm.cdf((self.eta - M - self.par) / s_c)[0]))
 
         if (np.asarray(f) < 0).any():
             raise ValueError(
                 "Expected Improvement is smaller than 0 for at least one "
                 "sample.")
-        
-        
 
         f = np.asarray(f)
-
-        
-        
         return f
         
         
@@ -346,8 +342,7 @@ class EI(AbstractAcquisitionFunction):
             raise ValueError(
                 "Expected Improvement is smaller than 0 for at least one "
                 "sample.")
-        
-       
+
         return f
 
 
