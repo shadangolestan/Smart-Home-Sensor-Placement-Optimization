@@ -5,7 +5,7 @@ from openbox.utils.constants import MAXINT, SUCCESS
 from openbox.acquisition_function import *
 from openbox.utils.util_funcs import get_types
 
-KG('ei')
+# KG('ei')
 
 
 acq_dict = {

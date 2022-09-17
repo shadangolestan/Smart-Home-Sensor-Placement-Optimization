@@ -28,7 +28,6 @@ class AbstractAcquisitionFunction(object, metaclass=abc.ABCMeta):
     model
     logger
     """
-
     def __str__(self):
         return type(self).__name__ + " (" + self.long_name + ")"
 
@@ -40,6 +39,7 @@ class AbstractAcquisitionFunction(object, metaclass=abc.ABCMeta):
         model : AbstractEPM
             Models the objective function.
         """
+        self.lmda = 0
         self.model = model
         self.logger = logging.getLogger(
             self.__module__ + "." + self.__class__.__name__)
@@ -58,6 +58,8 @@ class AbstractAcquisitionFunction(object, metaclass=abc.ABCMeta):
         ----------
         kwargs
         """
+        
+        self.lmda += 1
         for key in kwargs:
             setattr(self, key, kwargs[key])
 
@@ -149,6 +151,7 @@ class KG(AbstractAcquisitionFunction):
         self.eta = None
         self.epsilon = epsilon
         self.error = error
+        self.iteration = 0
     
 
     def sigma_neighbours(self, x):    
@@ -196,6 +199,7 @@ class KG(AbstractAcquisitionFunction):
             
         return steps
 
+
     def _compute(self, X: np.ndarray, **kwargs):
         """Computes the KG value and its derivatives.
 
@@ -211,6 +215,7 @@ class KG(AbstractAcquisitionFunction):
         np.ndarray(N, 1)
             Expected Improvement of X
         """
+
         # TODO: New acquisition function definition:
         self.placeHolders = []
         Xs = self.frange(self.epsilon, 8, self.epsilon)
@@ -224,30 +229,15 @@ class KG(AbstractAcquisitionFunction):
             X = X[:, np.newaxis]
         
         error = self.error
-                        
-        def calculate_f(MUs, STDs):
-            m = MUs
-            s = STDs
-            
-            z = (self.eta - m - self.par) / s
-            result = (self.eta - m - self.par) * norm.cdf(z) + s * norm.pdf(z)
-            
-            return result    
-        
-        ll = []
-        MUs = []
-        STDs = []
-        f = []
-        for x in X:
+
+        def gradient_analysis(x):
             Ns = self.sigma_neighbours(x)
-            
             m_ngbrs, v_ngbrs = self.model.predict_marginalized_over_instances(np.asarray(Ns))
             s_ngbrs = np.sqrt(v_ngbrs)
-            
             m_c, v_c = self.model.predict_marginalized_over_instances(np.asarray([x]))
             s_c = np.sqrt(v_c)
-            
             sigma = 0 
+
             for ind, f_i in enumerate(m_ngbrs):
                 sigma += np.abs(f_i - m_c[0])
                 # s_c += s_ngbrs[ind]
@@ -255,8 +245,23 @@ class KG(AbstractAcquisitionFunction):
             neighbors_performance = sigma / len(m_ngbrs)
             # s_c = s_c / (len(m_ngbrs) + 1)
 
-            M = m_c / (1 + neighbors_performance)
-            f.append(list(norm.cdf((self.eta - M - self.par) / s_c)[0]))
+            # M = m_c / (1 + neighbors_performance)
+            # f.append(list(norm.cdf((self.eta - M - self.par) / s_c)[0]))
+            
+            
+            lmda = self.lmda / 1000
+
+            alpha_c = calculate_alpha(m_c, s_c) / (lmda * neighbors_performance + 1)
+            return alpha_c
+
+        def calculate_alpha(MUs, STDs):
+            m = MUs
+            s = STDs
+            z = (self.eta - m - self.par) / s
+            result = (self.eta - m - self.par) * norm.cdf(z) + s * norm.pdf(z)
+            return result[0]
+        
+        f = list(map(gradient_analysis, X))
 
         if (np.asarray(f) < 0).any():
             raise ValueError(
@@ -264,6 +269,7 @@ class KG(AbstractAcquisitionFunction):
                 "sample.")
 
         f = np.asarray(f)
+
         return f
         
         
@@ -311,6 +317,9 @@ class EI(AbstractAcquisitionFunction):
         np.ndarray(N, 1)
             Expected Improvement of X
         """
+
+        
+
         if len(X.shape) == 1:
             X = X[:, np.newaxis]
         

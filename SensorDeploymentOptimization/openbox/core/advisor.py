@@ -132,6 +132,7 @@ class Advisor(object, metaclass=abc.ABCMeta):
         elif self.optimization_strategy == 'bo':
             self.surrogate_model.train(X, Y)
             incumbent_value = self.history_container.get_incumbents()[0][1]
+
             self.acquisition_function.update(model=self.surrogate_model,
                                              eta=incumbent_value,
                                              num_data=num_config_evaluated)
