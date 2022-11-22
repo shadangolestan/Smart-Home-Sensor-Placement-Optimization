@@ -224,6 +224,11 @@ class BayesianOptimization:
         self.task_id = task_id
         self.initial_state = initial_state
 
+        self.is_sensor_types = []
+        iss = list(input_sensor_types.values())[2:5]
+        for t in range(len(iss)):
+            if iss[t] == True:
+                self.is_sensor_types.append(3 + t)
 
         self.sensor_types = input_sensor_types
         self.LSsensorTypesNum = sum(1 for condition in list(input_sensor_types.values())[0:2] if condition)
@@ -451,9 +456,6 @@ class BayesianOptimization:
           for s in sensorNames:
               sensors.add(s)
 
-        # for row in output_file:
-        #     print(row)
-
 
         return output_file, list(sensors)
     
@@ -603,6 +605,8 @@ class BayesianOptimization:
                 sensor_xy = []
         '''
 
+        
+
         data = Data(sensorPositions, sensorTypes, self.BOV.space, self.CONSTANTS['epsilon'])
 
 
@@ -646,7 +650,10 @@ class BayesianOptimization:
         if (self.ISsensorTypesNum > 0):
             for i in range(1, self.CONSTANTS['max_IS_sensors'] + 1):
                 list_of_variables.append(sp.Categorical('is' + str(i), choices = self.BOV.objects, default_value = random.choice(self.BOV.objects)))
-                list_of_variables.append(sp.Int("is_t" + str(i), 2 + 1, 2 + self.ISsensorTypesNum, default_value = random.randint(2 + 1, 2 + self.ISsensorTypesNum)))
+                if self.ISsensorTypesNum > 1:
+                    list_of_variables.append(sp.Categorical("is_t" + str(i), choices = self.is_sensor_types, default_value = random.choice(self.is_sensor_types)))
+                else:
+                    list_of_variables.append(sp.Constant("is_t" + str(i), self.is_sensor_types[0]))
 
         return list_of_variables
 
