@@ -228,13 +228,13 @@ class Advisor(object, metaclass=abc.ABCMeta):
         An optimizer object.
         """
         
-        print('*' * 50)
+        print('-' * 50)
         print('self.acq_type ', self.acq_type)
         print('acq_optimizer_type ', self.acq_optimizer_type)
         print('self.num_objs ', self.num_objs)
         print('self.surrogate_model ', self.surrogate_model)
         print('self.num_constraints ', self.num_constraints)
-        print('*' * 50)
+        print('-' * 50)
         
         
         if self.num_objs == 1 or self.acq_type == 'parego':

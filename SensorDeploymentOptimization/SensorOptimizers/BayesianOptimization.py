@@ -512,11 +512,7 @@ class BayesianOptimization:
             for i in range(1, self.CONSTANTS['max_IS_sensors'] + 1):
                 sensor_xy = ast.literal_eval(config['is' + str(i)])
                 sensorPositions.append(sensor_xy)
-                sensorTypes.append(config['ls_t' + str(i)])
-
-    
-        print(sensorPositions)
-        print(sensorTypes)
+                sensorTypes.append(config['is_t' + str(i)])
 
         data = Data(sensorPositions, sensorTypes, self.BOV.space, self.CONSTANTS['epsilon'])
 
