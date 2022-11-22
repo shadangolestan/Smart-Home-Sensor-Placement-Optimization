@@ -136,7 +136,6 @@ class SMBO(BOBase):
 
         if advisor_type == 'default':
             from openbox.core.generic_advisor import Advisor
-            print('here 1')
             self.config_advisor = Advisor(config_space,
                                           num_objs=num_objs,
                                           num_constraints=num_constraints,
@@ -209,8 +208,6 @@ class SMBO(BOBase):
                                                 **advisor_kwargs)
         else:
             raise ValueError('Invalid advisor type!')
-
-        print(type(self.config_advisor))
 
     def run(self):
         for _ in tqdm(range(self.iteration_id, self.max_iterations)):
