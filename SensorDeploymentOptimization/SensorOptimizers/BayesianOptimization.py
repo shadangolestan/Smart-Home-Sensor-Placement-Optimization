@@ -42,7 +42,7 @@ class Data:
     def GetSensorConfiguration(self):
         from collections import Counter
         sensorLocations = self.GetSensorLocations()
-        _, rooms = pf.ParseWorld(simworldname = '')
+        _, rooms, _ = pf.ParseWorld(simworldname = '')
         summaryDict = Counter(self.sensorTypes)
 
         # TODO: DIFFERENT SENSOR TYPE DEFINITIONS SHOULD BE ADDED HERE:
@@ -110,7 +110,7 @@ class BOVariables:
         self.maxLSSensorNum = maxLSSensorNum
         self.maxISSensorNum = maxISSensorNum
         self.radius = radius
-        self.sensor_distribution, self.types, self.space, self.rooms, self.agentTraces = self.ModelsInitializations(ROS)
+        self.sensor_distribution, self.types, self.space, self.rooms, self.objects, self.agentTraces = self.ModelsInitializations(ROS)
         self.CreateGrid()
 
     def CreateGrid(self):
@@ -159,7 +159,7 @@ class BOVariables:
                     agentTraces.append(self.Data_path + 'Agent Trace Files/' + filename)
 
         # Parsing the space model: 
-        space, rooms = pf.ParseWorld(simworldname)
+        space, rooms, objects = pf.ParseWorld(simworldname)
         sim_sis.AddRandomnessToDatasets(self.epsilon, self.Data_path, rooms)
 
         space = [space[-1][0], space[1][1]]
@@ -171,7 +171,7 @@ class BOVariables:
         for room in sensor_distribution:
             roomsList.append(room)
               
-        return sensor_distribution, types, space, rooms, agentTraces
+        return sensor_distribution, types, space, rooms, objects, agentTraces
 
 
 
@@ -503,10 +503,20 @@ class BayesianOptimization:
 
         if (self.LSsensorTypesNum > 0):
             for i in range(1, self.CONSTANTS['max_LS_sensors'] + 1):
-                sensor_xy = ast.literal_eval(config['l' + str(i)])
+                sensor_xy = ast.literal_eval(config['ls' + str(i)])
                 # sensorPositions.append([sensor_xy[0]*self.CONSTANTS['epsilon'], sensor_xy[1]*self.CONSTANTS['epsilon']])
                 sensorPositions.append(sensor_xy)
-                sensorTypes.append(1)
+                sensorTypes.append(config['ls_t' + str(i)])
+
+        if (self.ISsensorTypesNum > 0):
+            for i in range(1, self.CONSTANTS['max_IS_sensors'] + 1):
+                sensor_xy = ast.literal_eval(config['is' + str(i)])
+                sensorPositions.append(sensor_xy)
+                sensorTypes.append(config['ls_t' + str(i)])
+
+    
+        print(sensorPositions)
+        print(sensorTypes)
 
         data = Data(sensorPositions, sensorTypes, self.BOV.space, self.CONSTANTS['epsilon'])
 
@@ -629,7 +639,18 @@ class BayesianOptimization:
                     ls.append(str(sensor_placeholder))
 
             for i in range(1, self.CONSTANTS['max_LS_sensors'] + 1):                
-                list_of_variables.append(sp.Categorical("l" + str(i), ls, default_value= random.choice(ls)))
+                list_of_variables.append(sp.Categorical("ls" + str(i), ls, default_value= random.choice(ls)))
+                if self.LSsensorTypesNum > 1:
+                        list_of_variables.append(sp.Int("ls_t" + str(i), 1, self.LSsensorTypesNum, default_value=random.randint(1, self.LSsensorTypesNum)))
+
+                else:
+                    list_of_variables.append(sp.Constant("ls_t" + str(i), 1))
+
+
+        if (self.ISsensorTypesNum > 0):
+            for i in range(1, self.CONSTANTS['max_IS_sensors'] + 1):
+                list_of_variables.append(sp.Categorical('is' + str(i), choices = self.BOV.objects, default_value = random.choice(self.BOV.objects)))
+                list_of_variables.append(sp.Int("is_t" + str(i), 2 + 1, 2 + self.ISsensorTypesNum, default_value = random.randint(2 + 1, 2 + self.ISsensorTypesNum)))
 
         return list_of_variables
 
