@@ -154,6 +154,9 @@ class HistoryContainer(object):
     def get_perf(self, config: Configuration):
         return self.data[config]
 
+    def get_perfs(self):
+        return self.perfs
+
     def get_all_perfs(self):
         return list(self.data.values())
 

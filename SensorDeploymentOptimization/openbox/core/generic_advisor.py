@@ -90,9 +90,21 @@ class Advisor(object, metaclass=abc.ABCMeta):
         self.acquisition_function = None
         self.optimizer = None
         self.auto_alter_model = False
+        self.incumbent_value = 100
+        self.s = 100
+        self.f_minus = 100
         self.algo_auto_selection()
         self.check_setup()
         self.setup_bo_basics()
+
+    def get_f_star(self):
+        return self.incumbent_value
+
+    def get_f_minus(self):
+        return self.f_minus
+
+    def get_variance(self):
+        return self.s
 
     def algo_auto_selection(self):
         from ConfigSpace import UniformFloatHyperparameter, UniformIntegerHyperparameter, \
@@ -330,13 +342,17 @@ class Advisor(object, metaclass=abc.ABCMeta):
 
         return initial_configs
 
-    def get_suggestion(self, history_container=None, return_list=False):
+    def get_suggestion(self, history_container=None, return_list=False, rl_action = None, RLBO = True):
         """
         Generate a configuration (suggestion) for this query.
         Returns
         -------
         A configuration.
         """
+
+        if RLBO == True:
+            self.acquisition_function.set_rl_action(rl_action)
+
         if history_container is None:
             history_container = self.history_container
 
@@ -382,11 +398,12 @@ class Advisor(object, metaclass=abc.ABCMeta):
 
             # update acquisition function
             if self.num_objs == 1:
-                incumbent_value = history_container.get_incumbents()[0][1]
+                self.incumbent_value = history_container.get_incumbents()[0][1]
                 self.acquisition_function.update(model=self.surrogate_model,
                                                  constraint_models=self.constraint_models,
-                                                 eta=incumbent_value,
+                                                 eta=self.incumbent_value,
                                                  num_data=num_config_evaluated)
+
             else:  # multi-objectives
                 mo_incumbent_value = history_container.get_mo_incumbent_value()
                 if self.acq_type == 'parego':
@@ -409,6 +426,9 @@ class Advisor(object, metaclass=abc.ABCMeta):
                                                      num_data=num_config_evaluated,
                                                      X=X, Y=Y)
 
+            perfs = history_container.get_perfs()
+            self.f_minus = perfs[-1]
+
             # optimize acquisition function
             challengers = self.optimizer.maximize(runhistory=history_container,
                                                   num_points=5000)
@@ -419,12 +439,17 @@ class Advisor(object, metaclass=abc.ABCMeta):
             for config in challengers.challengers:
                 
                 if config not in history_container.configurations:
+                    self.s = self.acquisition_function.get_variance()
+                    # self.incumbent_value = self.acquisition_function.get_incumbent_value()
                     return config
             self.logger.warning('Cannot get non duplicate configuration from BO candidates (len=%d). '
                                 'Sample random config.' % (len(challengers.challengers), ))
             return self.sample_random_configs(1, history_container)[0]
         else:
             raise ValueError('Unknown optimization strategy: %s.' % self.optimization_strategy)
+
+        
+
 
     def update_observation(self, observation: Observation):
         """

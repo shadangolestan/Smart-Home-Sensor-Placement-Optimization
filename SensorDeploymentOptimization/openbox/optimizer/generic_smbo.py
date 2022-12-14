@@ -13,9 +13,20 @@ from openbox.utils.limit import time_limit, TimeoutException
 from openbox.utils.util_funcs import get_result
 from openbox.core.base import Observation
 
+import gym
+import numpy as np
+import random
+# from ReinforcementLearning.ENV import AF_ENV
+
+
 """
     The objective function returns a dictionary that has --- config, constraints, objs ---.
 """
+
+from gym import Env
+from gym.spaces import Discrete, Box
+import numpy as np
+from gym import spaces
 
 
 class SMBO(BOBase):
@@ -135,6 +146,7 @@ class SMBO(BOBase):
         advisor_kwargs = advisor_kwargs or {}
 
         if advisor_type == 'default':
+            print('adviser type is default...')
             from openbox.core.generic_advisor import Advisor
             self.config_advisor = Advisor(config_space,
                                           num_objs=num_objs,
@@ -209,26 +221,160 @@ class SMBO(BOBase):
         else:
             raise ValueError('Invalid advisor type!')
 
-    def run(self):
+
+        class AF_ENV(gym.Env):
+            def __init__(self):
+                from ReinforcementLearning.ManageCONST import readCONST
+                super(AF_ENV, self).__init__()
+                self.CONST = readCONST()
+                self.reward_range = (0, 1)
+                self.States = {}
+                self.action_space = spaces.Discrete(11,)
+
+                self.observation_space = spaces.Box(low = np.array([0, 0]), high = np.array([100, 100]), dtype=np.int16)
+
+                # self.observation_space = tuple((Box(low = np.array([0]), high = np.array([100])), 
+                #                                 Box(low = np.array([0]), high = np.array([100]))))
+
+                self.next_action = 0
+                self.state = (0, 100)
+                self.f_star = 100
+                self.f_minus = 100
+
+            def step(self, next_action):
+                # calculate the next state:
+                # The iterate function updates self.eta and self.s:
+                # state = [tradeoff_buffer, f_star]
+                self.next_action = next_action
+                tradeoff_buffer = min(max(self.state[0] + self.next_action - 5, 0), 100)
+
+                print('\n\t ----- tradeoff_buffer: {} ----- '.format(tradeoff_buffer))
+
+                self.state = (tradeoff_buffer, int(self.f_star))
+
+                reward =  (self.f_star - self.f_minus) / self.f_star
+                info = {}
+
+                return self.state, reward, False, info
+
+            def reset(self):
+                self.state = (0, 100)
+                return self.state
+
+        self.env = AF_ENV()
+
+    def run_RLBO(self, q_table = None, env = None, RLBO = False):
+        from statistics import mean
+        from statistics import stdev
+        import time
+        from csv import writer
+        from ReinforcementLearning.ManageCONST import readCONST
+
+        #env = AF_ENV()
+        
+        CONST = readCONST()
+        MAX_EPISODES = CONST["QLearning"]["MAX_EPISODES"]
+        MAX_TRY = CONST["QLearning"]["MAX_TRY"]
+        learning_rate = CONST["QLearning"]["learning_rate"]
+        gamma = CONST["QLearning"]["gamma"]
+        epsilon = CONST["QLearning"]["epsilon"]
+        epsilon_decay = CONST["QLearning"]["epsilon_decay"]
+        #action_num = tuple((env.action_space.high + np.ones(env.action_space.shape)).astype(int))
+        #q_table = np.zeros(num_box + action_num)
+
+        num_box = tuple((self.env.observation_space.high + np.ones(self.env.observation_space.shape)).astype(int))
+
+        q_table = np.zeros(num_box + (self.env.action_space.n,))
+
+
+        self.env.States = {}
+        state = self.env.reset()
+        total_reward = 0
+
+        # state = tuple(state)
+
+        states = []
+        actions = []
+        rewards = []
+
         for _ in tqdm(range(self.iteration_id, self.max_iterations)):
             if self.budget_left < 0:
                 self.logger.info('Time %f elapsed!' % self.runtime_limit)
                 break
             start_time = time.time()
+
+            # In the beginning, do random action to learn
+            if random.uniform(0, 1) < epsilon:
+                action = self.env.action_space.sample()
+                
+            else:                
+                action = np.random.choice(np.flatnonzero(q_table[state] == q_table[state].max()))
+
+            # Do action and get result
+            self.iterate(budget_left=self.budget_left, RLBO = RLBO, rl_action = action)
+            next_state, reward, _, _ = self.env.step(action)
+
+            total_reward += reward
+            q_value = q_table[state][action]
+            best_q = np.max(q_table[state])
+
+            # Q(state, action) <- (1 - a)Q(state, action) + a(reward + rmaxQ(next state, all actions))            
+            q_table[state][action] = (1 - learning_rate) * q_value + learning_rate * (reward + gamma * best_q)
+
+            # Set up for the next iteration
+            state = next_state
+
+            if epsilon >= 0.005:
+                epsilon *= epsilon_decay
+
+            runtime = time.time() - start_time
+            self.budget_left -= runtime
+    
+            states.append(state)
+            rewards.append(reward)
+            actions.append(action)
+    
+        
+        return self.get_history(), states, actions, rewards
+
+    def run(self):
+        from statistics import mean
+        from statistics import stdev
+        import time
+        from csv import writer
+
+        for _ in tqdm(range(self.iteration_id, self.max_iterations)):
+            if self.budget_left < 0:
+                self.logger.info('Time %f elapsed!' % self.runtime_limit)
+                break
+            start_time = time.time()
+
             self.iterate(budget_left=self.budget_left)
+
             runtime = time.time() - start_time
             self.budget_left -= runtime
         return self.get_history()
 
-    def iterate(self, budget_left=None):
+    def iterate(self, budget_left=None, RLBO = False, rl_action = None):
         # get configuration suggestion from advisor
-        config = self.config_advisor.get_suggestion()
+
+        # TODO: HERE I SHOULD ADD RL ACTIONS
+        if not rl_action == None:
+            config = self.config_advisor.get_suggestion(rl_action = rl_action, RLBO = RLBO)
+
+            self.env.f_star = self.config_advisor.get_f_star()
+            self.env.s = np.mean(self.config_advisor.get_variance())
+            self.env.f_minus = self.config_advisor.get_f_minus()
+
+        else:
+            config = self.config_advisor.get_suggestion()
 
         trial_state = SUCCESS
         _budget_left = int(1e10) if budget_left is None else budget_left
         _time_limit_per_trial = math.ceil(min(self.time_limit_per_trial, _budget_left))
 
         # only evaluate non duplicate configuration
+
         if config not in self.config_advisor.history_container.configurations:
             start_time = time.time()
             try:

@@ -20,6 +20,8 @@ from openbox.surrogate.base.base_model import AbstractModel
 from openbox.surrogate.base.gp import GaussianProcess
 
 
+
+
 class AbstractAcquisitionFunction(object, metaclass=abc.ABCMeta):
     """Abstract base class for acquisition function
 
@@ -78,6 +80,7 @@ class AbstractAcquisitionFunction(object, metaclass=abc.ABCMeta):
         np.ndarray(N, 1)
             acquisition values for X
         """
+
         if convert:
             X = convert_configurations_to_array(configurations)
         else:
@@ -139,6 +142,7 @@ class KG(AbstractAcquisitionFunction):
             acquisition function.
         """
         
+        
         if num_fantasies is None:
                 raise ValueError(
                     "Must specify `num_fantasies`."
@@ -152,8 +156,75 @@ class KG(AbstractAcquisitionFunction):
         self.epsilon = epsilon
         self.error = error
         self.iteration = 0
-    
+        self.rl_action = None
 
+        
+    def get_variance(self):
+        return self.s
+
+    def et_incumbent_value(self):
+        return self.eta
+
+    def set_rl_action(self, action):
+        self.rl_action = action
+
+
+    def _compute(self, X: np.ndarray, **kwargs):
+        """Computes the EI value and its derivatives.
+
+        Parameters
+        ----------
+        X: np.ndarray(N, D), The input points where the acquisition function
+            should be evaluated. The dimensionality of X is (N, D), with N as
+            the number of points to evaluate at and D is the number of
+            dimensions of one X.
+
+        Returns
+        -------
+        np.ndarray(N, 1)
+            Expected Improvement of X
+        """
+
+        
+
+        if len(X.shape) == 1:
+            X = X[:, np.newaxis]
+        
+        m, v = self.model.predict_marginalized_over_instances(X)
+        self.s = np.sqrt(v)
+
+        if self.eta is None:
+            raise ValueError('No current best specified. Call update('
+                             'eta=<int>) to inform the acquisition function '
+                             'about the current best value.')
+
+        def calculate_f():
+            z = (self.eta - m - self.rl_action) / self.s
+            return (self.eta - m - self.rl_action) * norm.cdf(z) + self.s * norm.pdf(z)
+
+        if np.any(self.s == 0.0):
+            # if std is zero, we have observed x on all instances
+            # using a RF, std should be never exactly 0.0
+            # Avoid zero division by setting all zeros in s to one.
+            # Consider the corresponding results in f to be zero.
+            self.logger.warning("Predicted std is 0.0 for at least one sample.")
+            s_copy = np.copy(self.s)
+            self.s[s_copy == 0.0] = 1.0
+            f = calculate_f()
+            f[s_copy == 0.0] = 0.0
+        else:
+            f = calculate_f()
+        if (f < 0).any():
+            raise ValueError(
+                "Expected Improvement is smaller than 0 for at least one "
+                "sample.")
+
+        return f
+
+
+    
+    # KNOWLEDGE GRADIENT AQCUISITION FUNCTION FUNCTIONS:
+    '''
     def sigma_neighbours(self, x):    
         import ast    
         num_sensors = int(len(x))
@@ -198,7 +269,7 @@ class KG(AbstractAcquisitionFunction):
             start +=step
             
         return steps
-
+    
 
     def _compute(self, X: np.ndarray, **kwargs):
         """Computes the KG value and its derivatives.
@@ -271,6 +342,7 @@ class KG(AbstractAcquisitionFunction):
         f = np.asarray(f)
 
         return f
+    '''
         
         
 class EI(AbstractAcquisitionFunction):
@@ -332,6 +404,7 @@ class EI(AbstractAcquisitionFunction):
                              'about the current best value.')
 
         def calculate_f():
+            
             z = (self.eta - m - self.par) / s
             return (self.eta - m - self.par) * norm.cdf(z) + s * norm.pdf(z)
 

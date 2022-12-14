@@ -721,11 +721,11 @@ class BayesianOptimization:
         return list_of_variables
         '''
 
-    def run(self):
+    def run(self, RLBO = False):
 
         # Define Search Space
         self.space = sp.Space()
-
+        self.RLBO = RLBO
 
         
         list_of_variables = self.BuildConfigurationSearchSpace(self.initial_state)
@@ -744,7 +744,9 @@ class BayesianOptimization:
             epsilon = self.CONSTANTS['epsilon'],
             error = self.CONSTANTS['error']
         )
-        history = opt.run()
-
-
-        return history
+        if RLBO == True:
+            history, s, a, r = opt.run_RLBO(RLBO = self.RLBO)
+            return history, s, a, r
+        else:
+            history = opt.run(RLBO = self.RLBO)
+            return history
