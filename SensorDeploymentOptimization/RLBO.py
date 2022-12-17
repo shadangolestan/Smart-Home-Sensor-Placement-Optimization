@@ -8,8 +8,8 @@ ROS = True
 epsilon = 0.5
 error = 0.0
 multi_objective = False
-LSsensorsNum = 10
-ISsensorsNum = 1
+LSsensorsNum = 11
+ISsensorsNum = 0
 initial_state = 'random'
 RLBO = True
 

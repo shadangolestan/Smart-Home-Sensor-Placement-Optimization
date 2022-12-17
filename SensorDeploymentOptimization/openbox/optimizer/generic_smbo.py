@@ -16,7 +16,7 @@ from openbox.core.base import Observation
 import gym
 import numpy as np
 import random
-# from ReinforcementLearning.ENV import AF_ENV
+# from Reinforcement_Learning.ENV import AF_ENV
 
 
 """
@@ -224,41 +224,52 @@ class SMBO(BOBase):
 
         class AF_ENV(gym.Env):
             def __init__(self):
-                from ReinforcementLearning.ManageCONST import readCONST
+                from Reinforcement_Learning.ManageCONST import readCONST
                 super(AF_ENV, self).__init__()
                 self.CONST = readCONST()
                 self.reward_range = (0, 1)
                 self.States = {}
                 self.action_space = spaces.Discrete(11,)
 
-                self.observation_space = spaces.Box(low = np.array([0, 0]), high = np.array([100, 100]), dtype=np.int16)
+                self.observation_space = spaces.Box(low = np.array([0, 0]), high = np.array([50, 100]), dtype=np.int16)
 
                 # self.observation_space = tuple((Box(low = np.array([0]), high = np.array([100])), 
                 #                                 Box(low = np.array([0]), high = np.array([100]))))
 
                 self.next_action = 0
-                self.state = (0, 100)
-                self.f_star = 100
-                self.f_minus = 100
+                self.state = (0, 50)
+                self.f_star = 50
+                self.f_minus = 50
 
             def step(self, next_action):
                 # calculate the next state:
                 # The iterate function updates self.eta and self.s:
                 # state = [tradeoff_buffer, f_star]
                 self.next_action = next_action
-                tradeoff_buffer = min(max(self.state[0] + self.next_action - 5, 0), 100)
+                tradeoff_buffer = min(max(self.state[0] + self.next_action - 5, 0), 50)
 
                 print('\n\t ----- tradeoff_buffer: {} ----- '.format(tradeoff_buffer))
 
                 self.state = (tradeoff_buffer, int(self.f_star))
+                # reward =  (self.f_star - self.f_minus) / self.f_star
+                
+                if self.f_minus > 50:
+                    reward = -1 * (1 - (self.f_minus / 100))
 
-                reward =  (self.f_star - self.f_minus) / self.f_star
+                elif self.f_minus < self.f_star:
+                    reward =  (1 - (self.f_minus / 100)) * (1 - (self.f_star - self.f_minus))
+
+                else:
+                    reward =  1 - (self.f_minus / 100)
+
+                print('\t ----- reward: {} for f_star and f_minus: {} , {}'.format(reward, self.f_star, self.f_minus))
+
                 info = {}
 
                 return self.state, reward, False, info
 
             def reset(self):
-                self.state = (0, 100)
+                self.state = (0, 50)
                 return self.state
 
         self.env = AF_ENV()
@@ -268,7 +279,7 @@ class SMBO(BOBase):
         from statistics import stdev
         import time
         from csv import writer
-        from ReinforcementLearning.ManageCONST import readCONST
+        from Reinforcement_Learning.ManageCONST import readCONST
 
         #env = AF_ENV()
         
@@ -284,7 +295,8 @@ class SMBO(BOBase):
 
         num_box = tuple((self.env.observation_space.high + np.ones(self.env.observation_space.shape)).astype(int))
 
-        q_table = np.zeros(num_box + (self.env.action_space.n,))
+        # q_table = np.zeros(num_box + (self.env.action_space.n,))
+        q_table = np.random.random(num_box + (self.env.action_space.n,))
 
 
         self.env.States = {}
@@ -360,11 +372,9 @@ class SMBO(BOBase):
 
         # TODO: HERE I SHOULD ADD RL ACTIONS
         if not rl_action == None:
+            self.env.f_star = self.config_advisor.get_f_star()
             config = self.config_advisor.get_suggestion(rl_action = rl_action, RLBO = RLBO)
 
-            self.env.f_star = self.config_advisor.get_f_star()
-            self.env.s = np.mean(self.config_advisor.get_variance())
-            self.env.f_minus = self.config_advisor.get_f_minus()
 
         else:
             config = self.config_advisor.get_suggestion()
@@ -428,9 +438,22 @@ class SMBO(BOBase):
                              % (self.iteration_id, objs, constraints))
         else:
             self.logger.info('Iteration %d, objective value: %s.' % (self.iteration_id, objs))
+            
 
         # Visualization.
         # for idx, obj in enumerate(objs):
         #     if obj < self.FAILED_PERF[idx]:
         #         self.writer.add_scalar('data/objective-%d' % (idx + 1), obj, self.iteration_id)
+
+        if not rl_action == None:
+            # self.env.s = np.mean(self.config_advisor.get_variance())
+            # self.env.f_minus = self.config_advisor.get_f_minus()
+
+            # self.s = self.acquisition_function.get_variance()
+            # perfs = history_container.get_perfs()
+            self.env.f_minus = objs[0]
+
+
+            
+
         return config, trial_state, constraints, objs

@@ -426,12 +426,12 @@ class Advisor(object, metaclass=abc.ABCMeta):
                                                      num_data=num_config_evaluated,
                                                      X=X, Y=Y)
 
-            perfs = history_container.get_perfs()
-            self.f_minus = perfs[-1]
-
             # optimize acquisition function
             challengers = self.optimizer.maximize(runhistory=history_container,
                                                   num_points=5000)
+
+            
+
             if return_list:
                 # Caution: return_list doesn't contain random configs sampled according to rand_prob
                 return challengers.challengers
@@ -439,9 +439,8 @@ class Advisor(object, metaclass=abc.ABCMeta):
             for config in challengers.challengers:
                 
                 if config not in history_container.configurations:
-                    self.s = self.acquisition_function.get_variance()
-                    # self.incumbent_value = self.acquisition_function.get_incumbent_value()
                     return config
+                    
             self.logger.warning('Cannot get non duplicate configuration from BO candidates (len=%d). '
                                 'Sample random config.' % (len(challengers.challengers), ))
             return self.sample_random_configs(1, history_container)[0]
