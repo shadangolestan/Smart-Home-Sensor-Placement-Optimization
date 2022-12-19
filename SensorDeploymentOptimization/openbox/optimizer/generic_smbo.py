@@ -254,15 +254,12 @@ class SMBO(BOBase):
                 # reward =  (self.f_star - self.f_minus) / self.f_star
                 
                 if self.f_minus > 50:
-                    print('if')
                     reward = -1 * (self.f_minus / 100)
 
                 elif self.f_minus > self.f_star:
-                    print('elif')
                     reward = self.f_star/100 - self.f_minus/100
 
                 else:
-                    print('else')
                     reward =  1 - (self.f_minus / 100)
 
                 print('\t ----- reward: {} for f_star and f_minus: {} , {}'.format(reward, self.f_star, self.f_minus))
