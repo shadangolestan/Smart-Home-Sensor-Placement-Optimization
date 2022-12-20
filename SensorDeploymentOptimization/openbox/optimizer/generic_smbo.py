@@ -256,8 +256,8 @@ class SMBO(BOBase):
                 if self.f_minus > 50:
                     reward = -1 * (self.f_minus / 100)
 
-                elif self.f_minus > self.f_star:
-                    reward = self.f_star/100 - self.f_minus/100
+                # elif self.f_minus > self.f_star:
+                #     reward = self.f_star/100 - self.f_minus/100
 
                 else:
                     reward =  1 - (self.f_minus / 100)
