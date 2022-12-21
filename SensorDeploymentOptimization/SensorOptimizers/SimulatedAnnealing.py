@@ -167,7 +167,7 @@ class Chromosome:
     def GetSensorConfiguration(self):
         from collections import Counter
         sensorLocations, sensorTypes = self.GetSensorLocations()
-        _, rooms = pf.ParseWorld(simworldname = '')
+        _, rooms, _ = pf.ParseWorld(simworldname = '')
         
         summaryDict = Counter(sensorTypes)
 
@@ -401,7 +401,7 @@ class GreedyAndLocalSearch:
                     agentTraces.append(self.data_path + agent_trace_path + filename)
 
         # Parsing the space model: 
-        space, rooms = pf.ParseWorld(simworldname)
+        space, rooms, _ = pf.ParseWorld(simworldname)
         sim_sis.AddRandomnessToDatasets(self.epsilon, self.data_path, rooms)
         space = [space[-1][0], space[1][1]]
 
