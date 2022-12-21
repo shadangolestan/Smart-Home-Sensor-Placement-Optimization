@@ -748,5 +748,5 @@ class BayesianOptimization:
             history, s, a, r = opt.run_RLBO(RLBO = self.RLBO)
             return history, s, a, r
         else:
-            history = opt.run(RLBO = self.RLBO)
+            history = opt.run()
             return history

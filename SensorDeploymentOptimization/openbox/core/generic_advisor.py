@@ -342,7 +342,7 @@ class Advisor(object, metaclass=abc.ABCMeta):
 
         return initial_configs
 
-    def get_suggestion(self, history_container=None, return_list=False, rl_action = None, RLBO = True):
+    def get_suggestion(self, history_container=None, return_list=False, rl_action = None, RLBO = False):
         """
         Generate a configuration (suggestion) for this query.
         Returns
