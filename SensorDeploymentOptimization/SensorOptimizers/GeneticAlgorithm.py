@@ -16,8 +16,10 @@ import os
 import random
 
 class Chromosome:
-    def __init__(self, *args):
+    def __init__(self, testbed, *args):
         self.radius = 1
+        self.testbed = testbed
+
         if len(args) < 5:
             self.epsilon = args[3]
             self.initSensorNum = args[2]
@@ -59,13 +61,16 @@ class Chromosome:
         
         for x in Xs:
           for y in Ys:
-            self.placeHolders.append([x, y])
+            if self.testbed == 'Testbed2/':
+              if not (x <= 2 and y <= 2):
+                self.placeHolders.append([x, y])
+
             
 
     def SensorConfigurationSetup(self):
         Xs = self.frange(self.epsilon, self.space[0], self.epsilon)
         Ys = self.frange(self.epsilon, self.space[1], self.epsilon)
-        self.grid = np.zeros(len(Xs) * len(Ys)).tolist()
+        self.grid = np.zeros(len(self.placeHolders)).tolist()
  
         i = 0
         while i < self.initSensorNum:
@@ -138,7 +143,7 @@ class GA:
         
 
         for i in range(population):
-            self.chromosomes.append(Chromosome(self.mode, self.space, self.initSensorNum, self.epsilon))
+            self.chromosomes.append(Chromosome(testbed, self.mode, self.space, self.initSensorNum, self.epsilon))
 
     def Mutation(self, chromosome):
         for i in range(len(chromosome.grid)):
@@ -242,7 +247,7 @@ class GA:
             directory = os.fsencode(self.data_path + agent_trace_path)
             
         # Parsing the space model: 
-        space, rooms = pf.ParseWorld(simworldname)
+        space, rooms, _ = pf.ParseWorld(simworldname)
         SIM_SIS_Simulator.AddRandomnessToDatasets(self.epsilon, self.data_path, rooms)
 
         for file in os.listdir(directory):

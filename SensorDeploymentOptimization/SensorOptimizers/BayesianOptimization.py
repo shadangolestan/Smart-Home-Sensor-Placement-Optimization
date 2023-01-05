@@ -624,7 +624,7 @@ class BayesianOptimization:
         # This is for checking locations where placing sensors are not allowed. 
         # TODO: the restricted area needs to be read from a config file.
 
-        if sensor_placeholder[0] < 2 and sensor_placeholder[1] < 2:
+        if sensor_placeholder[0] <= 2 and sensor_placeholder[1] <= 2:
             return False
         else:
             return True

@@ -11,6 +11,12 @@ import argparse
 import copy
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.neural_network import MLPClassifier
+
 
 
 MODE_TRAIN = 'TRAIN'
@@ -90,6 +96,7 @@ class Config:
         self.add_pca = False  # Add principal components to feature vector
         self.weightinc = 0.01
         self.windata = np.zeros((self.max_window, 3), dtype=np.int)
+        
         self.clf = RandomForestClassifier(n_estimators=80,
                                           max_features=8,
                                           bootstrap=True,
@@ -98,6 +105,13 @@ class Config:
                                           max_depth=None,
                                           n_jobs=4,
                                           class_weight='balanced')
+        
+        # self.clf = AdaBoostClassifier(n_estimators=80, )
+        # self.clf = SVC(kernel='rbf', probability=True, class_weight='balanced')
+        # self.clf = KNeighborsClassifier(n_neighbors=7)
+        # self.clf = GradientBoostingClassifier()
+
+        
 
     def set_parameters(self, _sensornames):
         """ Set parameters according to command-line args list.
