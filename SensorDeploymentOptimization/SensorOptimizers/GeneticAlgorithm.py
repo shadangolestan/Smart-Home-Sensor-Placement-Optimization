@@ -17,6 +17,7 @@ import random
 
 class Chromosome:
     def __init__(self, testbed, *args):
+        
         self.radius = 1
         self.testbed = testbed
 
@@ -38,9 +39,7 @@ class Chromosome:
             self.mode = args[1]
             self.space = args[2]
             self.SensorPlaceHolderSetup()
-
-        
-                
+       
     def frange(self, start, stop, step):
         steps = []
         while start < stop:
@@ -191,8 +190,8 @@ class GA:
 
                 p1.grid, p2.grid = self.Crossover(p1.grid, p2.grid)
 
-                child1 = Chromosome(p1.grid, p1.mode, p1.space, self.epsilon, None)
-                child2 = Chromosome(p2.grid, p2.mode, p2.space, self.epsilon, None)
+                child1 = Chromosome(p1.testbed, p1.grid, p1.mode, p1.space, self.epsilon, None)
+                child2 = Chromosome(p1.testbed, p2.grid, p2.mode, p2.space, self.epsilon, None)
 
                 if sum(child1.grid) <= self.maxSensorNum or sum(child2.grid) <= self.maxSensorNum:
                     valid_child = True
