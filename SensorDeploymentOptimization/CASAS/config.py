@@ -99,7 +99,6 @@ class Config:
         self.add_pca = False  # Add principal components to feature vector
         self.weightinc = 0.01
         self.windata = np.zeros((self.max_window, 3), dtype=np.int)
-        '''
         self.clf = RandomForestClassifier(n_estimators=80,
                                           max_features=8,
                                           bootstrap=True,
@@ -108,30 +107,11 @@ class Config:
                                           max_depth=None,
                                           n_jobs=4,
                                           class_weight='balanced')
-        '''
-        
-        # self.clf = AdaBoostClassifier(n_estimators=80, )
-        
-        # self.clf = SVC(kernel='poly', class_weight='balanced')
         
         
-        self.clf = KNeighborsClassifier(n_neighbors = 7, p = 1, n_jobs = -1, weights = 'distance', algorithm = 'brute')
+        
+        # self.clf = KNeighborsClassifier(n_neighbors = 7, p = 1, n_jobs = -1, weights = 'distance', algorithm = 'brute')
         # self.clf = GradientBoostingClassifier()
-        '''
-        from sklearn import tree
-        self.clf = tree.DecisionTreeClassifier(criterion="entropy",
-                                               min_samples_split=20,
-                                               max_features=8,
-                                               class_weight='balanced')
-        '''
-        
-        # self.clf = LinearSVC(class_weight='balanced', )
-        
-        # from sklearn.neural_network import MLPClassifier
-        # self.clf = MLPClassifier(max_iter = 1000, hidden_layer_sizes = (15, 15))
-        
-        # self.clf = BaggingClassifier(max_features = 8, n_jobs = -1)
-        
 
     def set_parameters(self, _sensornames):
         """ Set parameters according to command-line args list.
