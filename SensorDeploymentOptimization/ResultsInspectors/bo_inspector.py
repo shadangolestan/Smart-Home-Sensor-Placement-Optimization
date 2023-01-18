@@ -43,12 +43,13 @@ def plot_convergence(
         iterations = range(1, n_calls + 1)
         maxs = [np.max(losses[:i]) for i in iterations]
         min_maxs = min(maxs)
-        
+        '''
         if plotDataPoints:
             cliped_losses = np.clip(losses, min_maxs, None)
         else:
             cliped_losses = None
-        
+        '''
+        cliped_losses = losses
 
         return plotter(iterations, maxs, cliped_losses, xlabel, ylabel, ax, name, alpha, yscale, color,
                                 true_minimum, ls, marker, **kwargs)
@@ -92,8 +93,8 @@ def plotter(
         ax = plt.gca()
 
     # ax.set_title(name)
-    ax.set_xlabel(xlabel, labelpad=-2)
-    ax.set_ylabel(ylabel, labelpad=-4)
+    ax.set_xlabel(xlabel, labelpad=-2, fontsize=9)
+    ax.set_ylabel(ylabel, labelpad=-4, fontsize=9)
     # ax.grid()
 
     if yscale is not None:

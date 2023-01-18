@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 
 def plot_convergence(
                      results,
@@ -61,8 +62,8 @@ def plotter(
         ax = plt.gca()
 
     # ax.set_title("Convergence plot")
-    ax.set_xlabel(xlabel, labelpad=-2)
-    ax.set_ylabel(ylabel, labelpad=-4)
+    ax.set_xlabel(xlabel, labelpad=-2, fontsize=9)
+    ax.set_ylabel(ylabel, labelpad=-4, fontsize=9)
     ax.grid()
 
     if yscale is not None:

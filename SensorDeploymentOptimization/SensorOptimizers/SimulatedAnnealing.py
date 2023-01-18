@@ -349,6 +349,8 @@ class GreedyAndLocalSearch:
                                         greedy = True,
                                         counter = 1)]
         
+        print('Greedy Performance is (F1-score, sensors placed): ', self.results[-1][0])
+        
         
     def GetNextGeneration(self, epoch):
         import copy 

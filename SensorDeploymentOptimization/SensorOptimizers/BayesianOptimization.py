@@ -174,25 +174,6 @@ class BOVariables:
         return sensor_distribution, types, space, rooms, objects, agentTraces
 
 
-
-
-
-
-
-
-
-
-
-
-
-     
-
-
-
-
-
-
-
 class BayesianOptimization:
     def __init__(self,
                  testbed = 'Testbed1/', 
@@ -525,41 +506,6 @@ class BayesianOptimization:
                                                            self.sensor_types['model_accelerometer'] and
                                                            self.sensor_types['model_electricity_sensor']))
 
-        '''
-        sensorPositions = []
-        sensorTypes = []
-        sensor_xy = []
-        excluded = []
-
-        if (self.LSsensorTypesNum > 0):
-            for i in range(1, self.CONSTANTS['max_LS_sensors'] + 1):
-                sensor_xy.append(config['x' + str(i)] * self.CONSTANTS['epsilon'])
-                sensor_xy.append(config['y' + str(i)] * self.CONSTANTS['epsilon'])
-                sensorTypes.append(config['t' + str(i)])
-                sensorPositions.append(sensor_xy)
-                sensor_xy = []
-
-        if (self.ISsensorTypesNum > 0):
-            for i in range(1, self.CONSTANTS['max_IS_sensors'] + 1):
-                object_location = config['object_location' + str(i)].split(',')
-                sensor_xy.append(float(object_location[0]))
-                sensor_xy.append(float(object_location[1]))
-                sensorTypes.append(config['t_o' + str(i)])
-                sensorPositions.append(sensor_xy)
-                sensor_xy = []
-
-        data = Data(sensorPositions, sensorTypes, self.BOV.space, self.CONSTANTS['epsilon'])
-
-
-        # print(sensorTypes)
-
-        return 100 - self.black_box_function(data, 
-                                             simulateMotionSensors = self.sensor_types['model_motion_sensor'],
-                                             simulateEstimotes = self.sensor_types['model_beacon_sensor'],
-                                             simulateIS = (self.sensor_types['model_pressure_sensor'] and
-                                                           self.sensor_types['model_accelerometer'] and
-                                                           self.sensor_types['model_electricity_sensor']))
-        '''
     
     def MakeDataBoundaries(self, height = 10.5, width = 6.6, MaxLSSensors = 15):
         from collections import defaultdict, OrderedDict
@@ -585,25 +531,6 @@ class BayesianOptimization:
             sensorTypes.append(1)
             sensorPositions.append(sensor_xy)
             sensor_xy = []
-
-        '''
-        if (LSsensorTypesNum > 0):
-            for i in range(1, CONSTANTS['max_LS_sensors'] + 1):
-                sensor_xy.append(config['x' + str(i)] * CONSTANTS['epsilon'])
-                sensor_xy.append(config['y' + str(i)] * CONSTANTS['epsilon'])
-                sensorTypes.append(config['t' + str(i)])
-                sensorPositions.append(sensor_xy)
-                sensor_xy = []
-
-        if (ISsensorTypesNum > 0):
-            for i in range(1, CONSTANTS['max_IS_sensors'] + 1):
-                object_location = config['object_location' + str(i)].split(',')
-                sensor_xy.append(float(object_location[0]))
-                sensor_xy.append(float(object_location[1]))
-                sensorTypes.append(config['t_o' + str(i)])
-                sensorPositions.append(sensor_xy)
-                sensor_xy = []
-        '''
 
         
 
@@ -656,70 +583,6 @@ class BayesianOptimization:
                     list_of_variables.append(sp.Constant("is_t" + str(i), self.is_sensor_types[0]))
 
         return list_of_variables
-
-        '''
-        list_of_variables = []
-        if (self.LSsensorTypesNum > 0):
-            for i in range(1, self.CONSTANTS['max_LS_sensors'] + 1):
-                if initial_state == 'fixed':
-                    x = sp.Int("x" + str(i), 1, int((self.CONSTANTS['width'] - 1) / self.CONSTANTS['epsilon']), default_value=1)
-                    y = sp.Int("y" + str(i), 1, int((self.CONSTANTS['height'] - 1) / self.CONSTANTS['epsilon']), default_value=1)
-
-                    if self.LSsensorTypesNum > 1:
-                        t = sp.Int("t" + str(i), 1, self.LSsensorTypesNum, default_value=random.randint(1, self.LSsensorTypesNum))
-
-                    else:
-                        t = sp.Constant("t" + str(i), 1)
-
-                elif(initial_state == 'random'):
-                    x = sp.Int("x" + str(i), 1, int((self.CONSTANTS['width'] - 1) / self.CONSTANTS['epsilon']), 
-                               default_value=random.randint(1, int((self.CONSTANTS['width'] - 1) / self.CONSTANTS['epsilon'])))
-
-                    y = sp.Int("y" + str(i), 1, int((self.CONSTANTS['height'] - 1) / self.CONSTANTS['epsilon']), 
-                               default_value=random.randint(1, int((self.CONSTANTS['width'] - 1) / self.CONSTANTS['epsilon'])))
-
-                    if self.LSsensorTypesNum > 1:
-                        t = sp.Int("t" + str(i), 1, self.LSsensorTypesNum, default_value=random.randint(1, self.LSsensorTypesNum))
-
-                    else:
-                        t = sp.Constant("t" + str(i), 1)
-
-                else:
-                    raise NotImplementedError (initial_state + " is not implemented yet! Try using 'fixed' or 'random' initial states istead")
-
-                list_of_variables.append(x)
-                list_of_variables.append(y)
-                list_of_variables.append(t)
-
-        if (self.ISsensorTypesNum > 0):
-            for i in range(1, self.CONSTANTS['max_IS_sensors'] + 1):
-                if initial_state == 'fixed':
-                    x_o = sp.Int("x_o" + str(i), 1, int((self.CONSTANTS['width'] - 1) / self.CONSTANTS['epsilon']), default_value=1)
-                    y_o = sp.Int("y_o" + str(i), 1, int((self.CONSTANTS['height'] - 1) / self.CONSTANTS['epsilon']), default_value=1)
-                    t_o = sp.Int("t_o" + str(i), self.LSsensorTypesNum + 1, self.ISsensorTypesNum + self.LSsensorTypesNum, 
-                               default_value=random.randint(self.LSsensorTypesNum + 1, self.ISsensorTypesNum + self.LSsensorTypesNum))
-
-                elif(initial_state == 'random'):
-
-                    #TODO:
-                    objects = ['0.5, 2.7', '3.5, 2.7', '6.7, 1.4', '4.2, 3.2', '1.7, 6.0', '6.0, 3.6', '7.4, 3.6', '1.0, 5.5', '6.8, 5.5', '0.5, 7.1', '2.2, 7.1', '7.1, 6.8']
-
-                    objects_location = sp.Categorical('object_location' + str(i), choices = objects, default_value = random.choice(objects))
-
-                    t_o = sp.Int("t_o" + str(i), 2 + 1, 2 + self.ISsensorTypesNum, 
-                                 default_value=random.randint(2 + 1, 2 + self.ISsensorTypesNum))
-
-                    # t_o = sp.Constant("t_o" + str(i), 3)
-
-                else:
-                    raise NotImplementedError (initial_state + " is not implemented yet! Try using 'fixed' or 'random' values istead")
-
-                list_of_variables.append(objects_location)
-                list_of_variables.append(t_o)
-        
-
-        return list_of_variables
-        '''
 
     def run(self, RLBO = False):
 
