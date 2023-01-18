@@ -63,6 +63,9 @@ class Chromosome:
             if self.testbed == 'Testbed2/':
               if not (x <= 2 and y <= 2):
                 self.placeHolders.append([x, y])
+                
+            else:
+                self.placeHolders.append([x, y])
 
             
 
@@ -169,21 +172,6 @@ class GA:
             while not valid_child:
                 coin1 = random.randrange(0, len(self.chromosomes) * self.reproduction_rate)
                 coin2 = random.randrange(0, len(self.chromosomes) * self.reproduction_rate)
-
-                # coin1 = random.randrange(int(np.sum([c.fitness + 1 for c in self.chromosomes])))
-                # coin2 = random.randrange(int(np.sum([c.fitness + 1 for c in self.chromosomes])))
-
-                # for c in self.chromosomes:
-                #     coin1 -= c.fitness + 1
-                #     if coin1 <= 0:
-                #         p1 = copy.deepcopy(c)
-                #         break
-
-                # for c in self.chromosomes:
-                #     coin2 -= c.fitness + 1
-                #     if coin2 <= 0:
-                #         p2 = copy.deepcopy(c)
-                #         break
 
                 p1 = copy.deepcopy(self.chromosomes[coin1])
                 p2 = copy.deepcopy(self.chromosomes[coin2])
@@ -571,41 +559,7 @@ def convertTime(posix_timestamp):
     dt = datetime.fromtimestamp(posix_timestamp, tz)
     time = dt.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
     return time
-
-'''
-def ModelsInitializations(Data_path, ROS):
-    #----- Space and agent models -----: 
-    simworldname = Data_path + '/Configuration Files/simulationWorld2.xml'
-    agentTraces = []
-    directory = os.fsencode(Data_path)
-
-    print(directory)
-    
-    for file in os.listdir(directory):
-        filename = os.fsdecode(file)
-        if filename.endswith(".csv"): 
-            agentTraces.append(Data_path + filename)
-
-    # Parsing the space model: 
-    space, rooms = pf.ParseWorld(simworldname)
-
-    xs = []
-    for i in space:
-      for j in i:
-        xs.append(j)
-    A = list(set(xs))
-    A.sort()
-    space = [A[-1], A[-2]]
-
-    # User parameters 
-    types, sensor_distribution = pf.GetUsersParameters()
-
-    roomsList = []
-    for room in sensor_distribution:
-        roomsList.append(room)
-
-    return sensor_distribution, types, space, rooms, agentTraces
-'''    
+  
 
 def get_confusion_matrix(config,
                          run_on_google_colab = False, 
