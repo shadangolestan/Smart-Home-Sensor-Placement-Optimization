@@ -19,6 +19,7 @@ from sklearn.svm import LinearSVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.neural_network import MLPClassifier
+import Config as cf
 
 
 
@@ -99,6 +100,10 @@ class Config:
         self.add_pca = False  # Add principal components to feature vector
         self.weightinc = 0.01
         self.windata = np.zeros((self.max_window, 3), dtype=np.int)
+
+        self.clf = cf.clf
+
+        '''
         self.clf = RandomForestClassifier(n_estimators=80,
                                           max_features=8,
                                           bootstrap=True,
@@ -107,7 +112,7 @@ class Config:
                                           max_depth=None,
                                           n_jobs=4,
                                           class_weight='balanced')
-        
+        '''
         
         
         # self.clf = KNeighborsClassifier(n_neighbors = 7, p = 1, n_jobs = -1, weights = 'distance', algorithm = 'brute')
