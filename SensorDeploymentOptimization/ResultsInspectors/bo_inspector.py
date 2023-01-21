@@ -12,6 +12,7 @@ def plot_convergence(
             color=None, 
             true_minimum=None, 
             plotDataPoints = True, 
+            fontsize = 10,
             ls = '-',
             marker = '',
             **kwargs):
@@ -43,16 +44,17 @@ def plot_convergence(
         iterations = range(1, n_calls + 1)
         maxs = [np.max(losses[:i]) for i in iterations]
         min_maxs = min(maxs)
-        '''
+        
         if plotDataPoints:
-            cliped_losses = np.clip(losses, min_maxs, None)
+            cliped_losses = losses
+            # cliped_losses = np.clip(losses, min_maxs, None)
         else:
             cliped_losses = None
-        '''
-        cliped_losses = losses
+        
+        
 
         return plotter(iterations, maxs, cliped_losses, xlabel, ylabel, ax, name, alpha, yscale, color,
-                                true_minimum, ls, marker, **kwargs)
+                                true_minimum, ls, marker, fontsize, **kwargs)
     
 def plotter(
         x, y1, y2,
@@ -66,6 +68,7 @@ def plotter(
         true_minimum=None, 
         ls = '-',
         marker = '',
+        fontsize = 10,
         **kwargs):
     """Plot one or several convergence traces.
     Parameters
@@ -93,8 +96,8 @@ def plotter(
         ax = plt.gca()
 
     # ax.set_title(name)
-    ax.set_xlabel(xlabel, labelpad=-2, fontsize=9)
-    ax.set_ylabel(ylabel, labelpad=-4, fontsize=9)
+    ax.set_xlabel(xlabel, labelpad=-2, fontsize=fontsize)
+    ax.set_ylabel(ylabel, labelpad=-4, fontsize=fontsize)
     # ax.grid()
 
     if yscale is not None:
@@ -117,13 +120,21 @@ def plotter(
     return ax
 
 def read_files(directory):
-    results = []
-    
     import os
     import pickle
+
+    class RenamingUnpickler(pickle.Unpickler):
+        def find_class(self, module, name):
+            if module == 'SensorOptimizers.SimulatedAnnealing':
+                module = 'SensorOptimizers.Greedy'
+            return super().find_class(module, name)
+
+    results = []
+    
     for filename in os.listdir(directory):
         if not filename.startswith('.'):
             with open(os.path.join(directory, filename), 'rb') as f:
-                results.append(pickle.load(f))
+                # results.append(pickle.load(f))
+                results.append(RenamingUnpickler(f).load())
 
     return results

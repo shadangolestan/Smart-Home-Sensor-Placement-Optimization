@@ -1,7 +1,7 @@
-
-
+#----- Experiment Parameters:
 testbed = 'Testbed1/'
 radius = 1
+epsilon = 1
 
 sensor_types = {
     'model_motion_sensor': True,
@@ -10,8 +10,6 @@ sensor_types = {
     'model_accelerometer': False,
     'model_electricity_sensor': False
 }
-
-#----------------- First Testbed
 
 if testbed == 'Testbed1/':
 
@@ -22,8 +20,6 @@ if testbed == 'Testbed1/':
             'kitchen': [(0.0, 3.0), (2.9, 8.0)],
             'bathroom': [(6.1, 3.2), (8.0, 6.7)],
             'storage': [(2.8, 6.4), (8.0, 8.0)]} 
-
-
     objects = ['0.5, 2.7', '3.5, 2.7', '6.7, 1.4', '4.2, 3.2', '1.7, 6.0', '6.0, 3.6', '7.4, 3.6', '1.0, 5.5', '6.8, 5.5', '0.5, 7.1', '2.2, 7.1', '7.1, 6.8']
 
 if testbed == 'Testbed2/':
@@ -35,7 +31,6 @@ if testbed == 'Testbed2/':
             'kitchen': [(3.0, 3.3), (5.3, 6.0)],
             'bathroom': [(0.0, 4.9), (2.4, 6.9)],
             'entryway': [(2.4, 6.0), (5.3, 8.0)]}
-
     objects = ['0.5, 2.7', '3.5, 2.7', '6.7, 1.4', '4.2, 3.2', '1.7, 6.0', '6.0, 3.6', '7.4, 3.6', '1.0, 5.5', '6.8, 5.5', '0.5, 7.1', '2.2, 7.1', '7.1, 6.8']
 
 
@@ -59,3 +54,15 @@ LSsensorsNum = 9
 ISsensorsNum = 0
 initial_state = 'random'
 RLBO = False
+
+#----- CASAS Parameters:
+from sklearn.ensemble import RandomForestClassifier
+
+clf = RandomForestClassifier(n_estimators=80,
+                             max_features=8,
+                             bootstrap=True,
+                             criterion="entropy",
+                             min_samples_split=20,
+                             max_depth=None,
+                             n_jobs=4,
+                             class_weight='balanced')

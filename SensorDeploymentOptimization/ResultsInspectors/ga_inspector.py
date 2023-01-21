@@ -6,7 +6,7 @@ def plot_convergence(
                      xlabel="Number of iterations $n$",
                      ylabel=r"Max objective value after $n$ iterations",
                      ax=None, name=None, alpha=0.2, yscale=None,
-                     color=None, true_minimum=None, plotDataPoints = False, ls = '-',
+                     color=None, true_minimum=None, plotDataPoints = False, fontsize = 10, ls = '-',
                      **kwargs
                     ):
         
@@ -45,14 +45,14 @@ def plot_convergence(
     
     
     return plotter(iterations, maxs, cliped_losses, xlabel, ylabel, ax, name, alpha, yscale, color,
-                            true_minimum, **kwargs)
+                            true_minimum, ls = ls, fontsize = fontsize, **kwargs)
     
 def plotter(
             x, y1, y2,
             xlabel="Number of iterations $n$",
             ylabel=r"Max objective value after $n$ iterations",
             ax=None, name=None, alpha=0.2, yscale=None,
-            color=None, true_minimum=None, ls = '-',
+            color=None, true_minimum=None, ls = '-', fontsize = 10,
             **kwargs
            ):
     
@@ -62,8 +62,8 @@ def plotter(
         ax = plt.gca()
 
     # ax.set_title("Convergence plot")
-    ax.set_xlabel(xlabel, labelpad=-2, fontsize=9)
-    ax.set_ylabel(ylabel, labelpad=-4, fontsize=9)
+    ax.set_xlabel(xlabel, labelpad=-2, fontsize=fontsize)
+    ax.set_ylabel(ylabel, labelpad=-4, fontsize=fontsize)
     ax.grid()
 
     if yscale is not None:
@@ -89,13 +89,21 @@ def plotter(
     return ax
 
 def read_files(directory):
-    results = []
-    
     import os
     import pickle
+
+    class RenamingUnpickler(pickle.Unpickler):
+        def find_class(self, module, name):
+            if module == 'SensorOptimizers.SimulatedAnnealing':
+                module = 'SensorOptimizers.Greedy'
+            return super().find_class(module, name)
+
+    results = []
+    
     for filename in os.listdir(directory):
         if not filename.startswith('.'):
             with open(os.path.join(directory, filename), 'rb') as f:
-                results.append(pickle.load(f))
+                # results.append(pickle.load(f))
+                results.append(RenamingUnpickler(f).load())
 
     return results
