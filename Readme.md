@@ -47,10 +47,10 @@ The Genetic Algorithm uses the SensorOptimizers.GeneticAlgorithm module to run a
 14. **Config.ROS**: whether to use the ROS (Reagion Of Similarity) for the testbed environment.
 15. **Config.input_sensor_types**: the types of sensors to be used in the sensor configuration.
 
+To run the genetic algoritm, run GA.ipynb. A pickle file, gets stored in GA_results, containing the history of the sensor configuration optimization, including the sensor configuration and the corresponding activity recognition acciracy at each iteration.
+
 ### Reference: 
 Brian L Thomas, Aaron S Crandall, and Diane J Cook. A genetic algorithm approach to motion sensor placement in smart environments. Journal of reliable intelligent environments, 2(1):3–16, 2016
-
-To run the genetic algoritm, run GA.ipynb. A pickle file, gets stored in GA_results, containing the history of the sensor configuration optimization, including the sensor configuration and the corresponding activity recognition acciracy at each iteration.
 
 ## Greedy Algorithm
 The Greedy Algorithm uses the SensorOptimizers.Greedy module to run a greedy algorithm for sensor optimization. The inputs are:
@@ -65,7 +65,7 @@ The Greedy Algorithm uses the SensorOptimizers.Greedy module to run a greedy alg
 
 To run the greedy algoritm, run Greedy.ipynb. A pickle file, gets stored in results_SA, containing the history of the sensor configuration optimization, including the sensor configuration and the corresponding activity recognition acciracy at each iteration.
 
-## Reference:
+### Reference:
 Andreas Krause, Jure Leskovec, Carlos Guestrin, Jeanne VanBriesen, and Christos Faloutsos. Efficient sensor placement optimization for securing large water distribution networks. Journal of Water Resources Planning and Management, 134(6):516–526, 2008.
 
 # Packages Used:
