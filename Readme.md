@@ -2,7 +2,9 @@
 This framework performs Bayesian optimization for sensor configuration in a testbed environment. The sensor configuration is optimized in terms of maximizing the accuracy of an activity recognition. The code uses the package SensorOptimizers.BayesianOptimization which uses OpenBox.
 
 # Requirements Installation
-'pip install -r /SensorConfigurationOptimization/requirements.txt'
+'''
+pip install -r /SensorConfigurationOptimization/requirements.txt
+'''
 
 # Inputs
 1. **Config.space**: the space in which to optimize the sensor configuration.
@@ -68,7 +70,7 @@ Andreas Krause, Jure Leskovec, Carlos Guestrin, Jeanne VanBriesen, and Christos 
 
 # Packages Used:
 
-**Activity Recognition**: Center of advanced studies in adaptive systems (casas) at washington state university. http://casas.wsu.edu/
-**Intelligent Indoor Environment Simulation**: Shadan Golestan, Ioanis Nikolaidis, and Eleni Stroulia. Towards a simulation framework for smart indoor spaces. Sensors, 20(24):7137, 2020.
+1. **Activity Recognition**: Center of advanced studies in adaptive systems (casas) at washington state university. http://casas.wsu.edu/
+2. **Intelligent Indoor Environment Simulation**: Shadan Golestan, Ioanis Nikolaidis, and Eleni Stroulia. Towards a simulation framework for smart indoor spaces. Sensors, 20(24):7137, 2020.
 
 
