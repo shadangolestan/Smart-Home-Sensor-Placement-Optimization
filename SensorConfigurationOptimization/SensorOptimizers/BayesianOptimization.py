@@ -216,7 +216,7 @@ class BayesianOptimization:
         self.ISsensorTypesNum = sum(1 for condition in list(input_sensor_types.values())[2:5] if condition)
 
         testbed
-        base_path = '../SensorDeploymentOptimization/'
+        base_path = '../SensorConfigurationOptimization/'
         sys.path.append('..')
 
         # finalResults = []

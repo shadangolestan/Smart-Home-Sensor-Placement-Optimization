@@ -1,0 +1,8 @@
+[INFO] [2023-01-23 16:27:11,577] [Advisor] === [BO auto selection] === surrogate_type: prf. acq_optimizer_type: local_random.
+[INFO] [2023-01-23 16:28:20,472] [OpenBox-SPO] Iteration 1, objective value: [53.02092940733285].
+[INFO] [2023-01-23 16:30:01,689] [OpenBox-SPO] Iteration 2, objective value: [51.763764785961506].
+[INFO] [2023-01-23 16:31:48,795] [OpenBox-SPO] Iteration 3, objective value: [57.83026232868462].
+[INFO] [2023-01-23 16:33:33,665] [OpenBox-SPO] Iteration 4, objective value: [51.6130521985905].
+[INFO] [2023-01-23 16:35:03,212] [OpenBox-SPO] Iteration 5, objective value: [51.91043525206123].
+[INFO] [2023-01-23 16:36:54,484] [OpenBox-SPO] Iteration 6, objective value: [54.019610659209775].
+[INFO] [2023-01-23 16:38:59,634] [OpenBox-SPO] Iteration 7, objective value: [58.059302529256264].

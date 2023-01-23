@@ -691,7 +691,7 @@ def run(testbed = 'Testbed1/',
     LSsensorTypesNum = sum(1 for condition in list(input_sensor_types.values())[0:2] if condition)
     ISsensorTypesNum = sum(1 for condition in list(input_sensor_types.values())[2:5] if condition)
 
-    base_path = '../SensorDeploymentOptimization/'
+    base_path = '../SensorConfigurationOptimization/'
     sys.path.append('..')
 
     finalResults = []

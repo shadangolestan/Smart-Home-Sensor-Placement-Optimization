@@ -583,16 +583,8 @@ def get_confusion_matrix(config,
 
         import sys
 
-        if (runningOnGoogleColab == True):
-            from google.colab import drive    
-            drive.mount('/content/gdrive', force_remount=True)
-            base_path = 'gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/'
-            sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/')
-
-        else:
-            base_path = '../SensorDeploymentOptimization/'
-            # sys.path.append('../../Codes/SensorDeploymentOptimization/')
-            sys.path.append('..')
+        base_path = '../SensorConfigurationOptimization/'
+        sys.path.append('..')
            
         ga = GA(population, 
                 'expert', 
@@ -639,16 +631,9 @@ def run(testbed,
 
         import sys
 
-        if (runningOnGoogleColab == True):
-            from google.colab import drive    
-            drive.mount('/content/gdrive', force_remount=True)
-            base_path = 'gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/'
-            sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/')
 
-        else:
-            base_path = '../SensorDeploymentOptimization/'
-            # sys.path.append('../../Codes/SensorDeploymentOptimization/')
-            sys.path.append('..')
+        base_path = '../SensorConfigurationOptimization/'
+        sys.path.append('..')
 
         
 
