@@ -2,9 +2,9 @@
 This framework performs Bayesian optimization for sensor configuration in a testbed environment. The sensor configuration is optimized in terms of maximizing the accuracy of an activity recognition. The code uses the package SensorOptimizers.BayesianOptimization which uses OpenBox.
 
 # Requirements Installation
-'''
+```
 pip install -r /SensorConfigurationOptimization/requirements.txt
-'''
+```
 
 # Inputs
 1. **Config.space**: the space in which to optimize the sensor configuration.
