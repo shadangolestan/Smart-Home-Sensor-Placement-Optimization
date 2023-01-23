@@ -671,12 +671,9 @@ def run(testbed = 'Testbed1/',
 
     global multi_objective_flag
     global CONSTANTS
-    global runningOnGoogleColab
     global sensor_types
     global LSsensorTypesNum
     global ISsensorTypesNum
-    
-    runningOnGoogleColab = run_on_colab
 
     multi_objective_flag = multi_objective
     CONSTANTS = {
@@ -694,26 +691,13 @@ def run(testbed = 'Testbed1/',
     LSsensorTypesNum = sum(1 for condition in list(input_sensor_types.values())[0:2] if condition)
     ISsensorTypesNum = sum(1 for condition in list(input_sensor_types.values())[2:5] if condition)
 
-    if (runningOnGoogleColab == True):
-        from google.colab import drive    
-        drive.mount('/content/gdrive', force_remount=True)
-        base_path = 'gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/'
-        sys.path.append('gdrive/My Drive/PhD/Thesis/Ideas/Codes/SensorDeploymentOptimization/')
-
-    else:
-        base_path = '../SensorDeploymentOptimization/'
-        sys.path.append('..')
+    base_path = '../SensorDeploymentOptimization/'
+    sys.path.append('..')
 
     finalResults = []
     w = CONSTANTS['width'] - 0.5
     h = CONSTANTS['height'] - 0.5
 
-    # dataBoundaries = MakeDataBoundaries(
-    #                                     height = CONSTANTS['height'], 
-    #                                     width = CONSTANTS['width'], 
-    #                                     MaxLSSensors = CONSTANTS['max_LS_sensors']
-    #                                    )
-    
     results = []
     best_configuration_history = []
     
@@ -733,8 +717,6 @@ def run(testbed = 'Testbed1/',
                                learning_rate,
                                LSsensorTypesNum + ISsensorTypesNum)
     
-    # sa.RunFitnessFunction(True, False, False, 1)
-    
     print('Running Greedy Algorithm...', end='')
     GLS.RunGreedyAlgorithm()
     print('[Done!]')
@@ -743,18 +725,4 @@ def run(testbed = 'Testbed1/',
     print('number of sensors:', sum(GLS.GreedyOutput[0].grid))
     print('remaining queries:', CONSTANTS['iterations'])
     
-    '''
-    for epoch in range(CONSTANTS['iterations']):
-    # while epoch < GLS.QueryNumber
-            GLS.GetNextGeneration(epoch)
-            if (print_epochs == True):
-                print("(epoch %d) ----- The best answer: {%f} with (%d) number of sensors" 
-                      %(epoch + 1, 
-                        GLS.GreedyOutput[0].fitness,  
-                        np.sum(GLS.GreedyOutput[0].grid)))
-
-            GLS.results.append([(c.fitness, sum(c.grid)) for c in GLS.GreedyOutput])
-            GLS.best_configuration_history.append(GLS.GreedyOutput[0])
-            epoch = epoch + 1
-    '''
     return GLS.results, GLS.best_configuration_history
