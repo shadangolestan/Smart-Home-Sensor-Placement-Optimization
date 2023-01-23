@@ -45,6 +45,9 @@ The Genetic Algorithm uses the SensorOptimizers.GeneticAlgorithm module to run a
 **Config.ROS**: whether to use the ROS (Reagion Of Similarity) for the testbed environment.
 **Config.input_sensor_types**: the types of sensors to be used in the sensor configuration.
 
+### Reference: 
+Brian L Thomas, Aaron S Crandall, and Diane J Cook. A genetic algorithm approach to motion sensor placement in smart environments. Journal of reliable intelligent environments, 2(1):3–16, 2016
+
 To run the genetic algoritm, run GA.ipynb. A pickle file, gets stored in GA_results, containing the history of the sensor configuration optimization, including the sensor configuration and the corresponding activity recognition acciracy at each iteration.
 
 ## Greedy Algorithm
@@ -57,5 +60,15 @@ The Greedy Algorithm uses the SensorOptimizers.Greedy module to run a greedy alg
 **Config.ISsensorsNum**: the number of Interaction Sensitive sensors (e.g., electricity sensors) to be placed in the initial state of the space.
 **Config.initial_state**: the initial state of the sensor configuration.
 **Config.input_sensor_types**: the types of sensors to be used in the sensor configuration.
+
+To run the greedy algoritm, run Greedy.ipynb. A pickle file, gets stored in results_SA, containing the history of the sensor configuration optimization, including the sensor configuration and the corresponding activity recognition acciracy at each iteration.
+
+## Reference:
+Andreas Krause, Jure Leskovec, Carlos Guestrin, Jeanne VanBriesen, and Christos Faloutsos. Efficient sensor placement optimization for securing large water distribution networks. Journal of Water Resources Planning and Management, 134(6):516–526, 2008.
+
+# Packages Used:
+
+**Activity Recognition**: Center of advanced studies in adaptive systems (casas) at washington state university. http://casas.wsu.edu/
+**Intelligent Indoor Environment Simulation**: Shadan Golestan, Ioanis Nikolaidis, and Eleni Stroulia. Towards a simulation framework for smart indoor spaces. Sensors, 20(24):7137, 2020.
 
 
