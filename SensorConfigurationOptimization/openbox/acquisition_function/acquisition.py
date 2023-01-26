@@ -162,7 +162,7 @@ class KG(AbstractAcquisitionFunction):
     def get_variance(self):
         return self.s
 
-    def et_incumbent_value(self):
+    def get_incumbent_value(self):
         return self.eta
 
     def set_rl_action(self, action):

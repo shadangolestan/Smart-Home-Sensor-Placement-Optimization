@@ -229,35 +229,40 @@ class SMBO(BOBase):
                 self.CONST = readCONST()
                 self.reward_range = (0, 1)
                 self.States = {}
-                self.action_space = spaces.Discrete(11,)
-
-                self.observation_space = spaces.Box(low = np.array([0, 0]), high = np.array([50, 100]), dtype=np.int16)
+                self.action_space = spaces.Discrete(3,)
+                self.observation_space = spaces.Box(low = np.array([0, 0, 0]), high = np.array([10, 20, 20]), dtype=np.int16)
 
                 # self.observation_space = tuple((Box(low = np.array([0]), high = np.array([100])), 
                 #                                 Box(low = np.array([0]), high = np.array([100]))))
 
                 self.next_action = 0
-                self.state = (0, 50)
-                self.f_star = 50
-                self.f_minus = 50
+                self.f_star = 10
+                self.f_minus = 10
+                self.state = (0, self.f_star, self.f_minus)
+                self.s = 10
 
             def step(self, next_action):
                 # calculate the next state:
                 # The iterate function updates self.eta and self.s:
                 # state = [tradeoff_buffer, f_star]
+
+                # print('\t self.next_action:', self.next_action)
                 self.next_action = next_action
-                tradeoff_buffer = min(max(self.state[0] + self.next_action - 5, 0), 50)
+                tradeoff_buffer = min(max(self.state[0] + self.next_action, 0), 10)
 
-                print('\n\t ----- tradeoff_buffer: {} ----- '.format(tradeoff_buffer))
+                # print('\n\t ----- tradeoff_buffer: {} ----- '.format(tradeoff_buffer))
 
-                self.state = (tradeoff_buffer, int(self.f_star))
+                self.state = (tradeoff_buffer, int(int(self.f_star) / 5), int(int(self.s) / 5))
+
+                # print('\t ---- next state after applying buffer: ', self.state)
+
                 # reward =  (self.f_star - self.f_minus) / self.f_star
                 
                 if self.f_minus > 50:
-                    reward = -1 * (self.f_minus / 100)
+                    reward = -1 # * (self.f_minus / 100)
 
-                # elif self.f_minus > self.f_star:
-                #     reward = self.f_star/100 - self.f_minus/100
+                elif self.f_minus > self.f_star:
+                    reward = self.f_star/100 - self.f_minus/100
 
                 else:
                     reward =  1 - (self.f_minus / 100)
@@ -269,7 +274,7 @@ class SMBO(BOBase):
                 return self.state, reward, False, info
 
             def reset(self):
-                self.state = (0, 50)
+                self.state = (0, 20, 10)
                 return self.state
 
         self.env = AF_ENV()
@@ -294,6 +299,7 @@ class SMBO(BOBase):
         #q_table = np.zeros(num_box + action_num)
 
         num_box = tuple((self.env.observation_space.high + np.ones(self.env.observation_space.shape)).astype(int))
+
 
         # q_table = np.zeros(num_box + (self.env.action_space.n,))
         q_table = np.random.random(num_box + (self.env.action_space.n,))
@@ -322,9 +328,12 @@ class SMBO(BOBase):
             else:                
                 action = np.random.choice(np.flatnonzero(q_table[state] == q_table[state].max()))
 
+
+            # print('buffer to be applied in the next iteration: ', action - 1)
+            
             # Do action and get result
-            self.iterate(budget_left=self.budget_left, RLBO = RLBO, rl_action = action)
-            next_state, reward, _, _ = self.env.step(action)
+            self.iterate(budget_left=self.budget_left, RLBO = RLBO, rl_action = action - 1)
+            next_state, reward, _, _ = self.env.step(action - 1)
 
             total_reward += reward
             q_value = q_table[state][action]
@@ -373,6 +382,7 @@ class SMBO(BOBase):
         # TODO: HERE I SHOULD ADD RL ACTIONS
         if not rl_action == None:
             self.env.f_star = self.config_advisor.get_f_star()
+            # self.env.s = self.config_advisor.get_variance()
             config = self.config_advisor.get_suggestion(rl_action = rl_action, RLBO = RLBO)
 
 
@@ -447,10 +457,12 @@ class SMBO(BOBase):
 
         if not rl_action == None:
             # self.env.s = np.mean(self.config_advisor.get_variance())
+            
             # self.env.f_minus = self.config_advisor.get_f_minus()
 
-            # self.s = self.acquisition_function.get_variance()
+            self.s = self.config_advisor.get_variance()
             # perfs = history_container.get_perfs()
+
             self.env.f_minus = objs[0]
 
 

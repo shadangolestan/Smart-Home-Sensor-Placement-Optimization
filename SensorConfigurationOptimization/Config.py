@@ -45,7 +45,7 @@ survival_rate = 0.1
 reproduction_rate = 0.2
 
 #----- BO Parameters:
-acquisition_function = 'ei'
+acquisition_function = 'kg'
 acq_optimizer_type = 'auto'
 ROS = True
 error = 0.0
@@ -53,7 +53,8 @@ multi_objective = False
 LSsensorsNum = 9
 ISsensorsNum = 0
 initial_state = 'random'
-RLBO = False
+bo_iteration = 1000
+RLBO = True
 
 #----- CASAS Parameters:
 from sklearn.ensemble import RandomForestClassifier

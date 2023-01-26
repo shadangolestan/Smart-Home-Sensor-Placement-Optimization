@@ -430,7 +430,7 @@ class Advisor(object, metaclass=abc.ABCMeta):
             challengers = self.optimizer.maximize(runhistory=history_container,
                                                   num_points=5000)
 
-            
+            self.s = self.acquisition_function.get_variance()
 
             if return_list:
                 # Caution: return_list doesn't contain random configs sampled according to rand_prob
