@@ -230,16 +230,20 @@ class SMBO(BOBase):
                 self.reward_range = (0, 1)
                 self.States = {}
                 self.action_space = spaces.Discrete(3,)
-                self.observation_space = spaces.Box(low = np.array([0, 0, 0]), high = np.array([10, 20, 20]), dtype=np.int16)
+                self.observation_space = spaces.Box(low = np.array([0, 25]), high = np.array([10, 45]), dtype=np.int16)
 
                 # self.observation_space = tuple((Box(low = np.array([0]), high = np.array([100])), 
                 #                                 Box(low = np.array([0]), high = np.array([100]))))
 
                 self.next_action = 0
-                self.f_star = 10
-                self.f_minus = 10
-                self.state = (0, self.f_star, self.f_minus)
-                self.s = 10
+                self.f_star = 20
+                self.f_minus = 20
+                self.s = 5
+                self.buffer = 5
+                self.uncertainty = 5
+                # self.state = (0, self.f_star, self.f_minus)
+                self.state = (self.buffer, self.uncertainty)
+                
 
             def step(self, next_action):
                 # calculate the next state:
@@ -248,33 +252,31 @@ class SMBO(BOBase):
 
                 # print('\t self.next_action:', self.next_action)
                 self.next_action = next_action
-                tradeoff_buffer = min(max(self.state[0] + self.next_action, 0), 10)
+                self.buffer = min(max(self.state[0] + self.next_action, 0), 10)
+                # print(self.s)
+                self.uncertainty = min(int(self.s * 10), 45)
 
                 # print('\n\t ----- tradeoff_buffer: {} ----- '.format(tradeoff_buffer))
 
-                self.state = (tradeoff_buffer, int(int(self.f_star) / 5), int(int(self.s) / 5))
+                self.state = (self.buffer, self.uncertainty)
 
                 # print('\t ---- next state after applying buffer: ', self.state)
-
                 # reward =  (self.f_star - self.f_minus) / self.f_star
                 
-                if self.f_minus > 50:
-                    reward = -1 # * (self.f_minus / 100)
+                # if self.f_minus > 50:
+                #     reward = -1 # * (self.f_minus / 100)
 
-                elif self.f_minus > self.f_star:
-                    reward = self.f_star/100 - self.f_minus/100
-
-                else:
-                    reward =  1 - (self.f_minus / 100)
+                # else:
+                reward =  1 - (self.f_minus / 100)
 
                 print('\t ----- reward: {} for f_star and f_minus: {} , {}'.format(reward, self.f_star, self.f_minus))
+                print('\t ---------- State is: ', self.state)
 
                 info = {}
-
                 return self.state, reward, False, info
 
             def reset(self):
-                self.state = (0, 20, 10)
+                self.state = (0, 5)
                 return self.state
 
         self.env = AF_ENV()
@@ -460,7 +462,8 @@ class SMBO(BOBase):
             
             # self.env.f_minus = self.config_advisor.get_f_minus()
 
-            self.s = self.config_advisor.get_variance()
+
+            self.env.s = np.mean(self.config_advisor.get_variance())
             # perfs = history_container.get_perfs()
 
             self.env.f_minus = objs[0]
